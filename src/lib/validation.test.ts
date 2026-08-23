@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  getDateError,
   getDuplicateNameIndices,
   getItemFieldErrors,
   getMoneyError,
   getNameError,
   getQuantityError,
+  getWildcardError,
   isItemValid,
   isNameTaken,
 } from "./validation";
@@ -75,6 +77,18 @@ describe("isNameTaken", () => {
   it("returns false for an empty name", () => {
     expect(isNameTaken("", ["Alice"])).toBe(false);
   });
+});
+
+describe("getWildcardError", () => {
+  it("passes an empty value (optional field)", () => expect(getWildcardError("")).toBeNull());
+  it("passes a normal name", () => expect(getWildcardError("Dinner at Joe's")).toBeNull());
+  it("rejects a wildcard character", () => expect(getWildcardError("Joe*s")).toBe("No * ? % _ allowed"));
+});
+
+describe("getDateError", () => {
+  it("passes an empty value (optional field)", () => expect(getDateError("")).toBeNull());
+  it("passes a valid ISO date", () => expect(getDateError("2026-08-23")).toBeNull());
+  it("rejects an unparseable date", () => expect(getDateError("not-a-date")).not.toBeNull());
 });
 
 describe("getDuplicateNameIndices", () => {

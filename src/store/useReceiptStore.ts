@@ -7,6 +7,8 @@ export type WizardStep = "people" | "items" | "mode" | "assign" | "summary";
 
 interface ReceiptState {
   step: WizardStep;
+  receiptName: string;
+  receiptDate: string;
   people: Person[];
   items: ReceiptItem[];
   taxCents: number;
@@ -14,6 +16,8 @@ interface ReceiptState {
   splitMode: SplitMode | null;
   assignments: ItemAssignments;
 
+  setReceiptName: (name: string) => void;
+  setReceiptDate: (date: string) => void;
   addPerson: (name: string) => void;
   removePerson: (id: string) => void;
   renamePerson: (id: string, name: string) => void;
@@ -36,6 +40,8 @@ function nextAfterMode(mode: SplitMode | null): WizardStep {
 
 export const useReceiptStore = create<ReceiptState>((set) => ({
   step: "people",
+  receiptName: "",
+  receiptDate: "",
   people: [],
   items: [],
   taxCents: 0,
@@ -43,6 +49,8 @@ export const useReceiptStore = create<ReceiptState>((set) => ({
   splitMode: null,
   assignments: {},
 
+  setReceiptName: (name) => set({ receiptName: name }),
+  setReceiptDate: (date) => set({ receiptDate: date }),
   addPerson: (name) =>
     set((s) => ({ people: [...s.people, { id: crypto.randomUUID(), name }] })),
   removePerson: (id) =>

@@ -3,9 +3,20 @@ import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
 import { useReceiptStore } from "../store/useReceiptStore";
-import { DUPLICATE_NAME_MESSAGE, getDuplicateNameIndices, getNameError, isNameTaken } from "../lib/validation";
+import {
+  DUPLICATE_NAME_MESSAGE,
+  getDateError,
+  getDuplicateNameIndices,
+  getNameError,
+  getWildcardError,
+  isNameTaken,
+} from "../lib/validation";
 
 export function PeopleManager() {
+  const receiptName = useReceiptStore((s) => s.receiptName);
+  const receiptDate = useReceiptStore((s) => s.receiptDate);
+  const setReceiptName = useReceiptStore((s) => s.setReceiptName);
+  const setReceiptDate = useReceiptStore((s) => s.setReceiptDate);
   const people = useReceiptStore((s) => s.people);
   const addPerson = useReceiptStore((s) => s.addPerson);
   const removePerson = useReceiptStore((s) => s.removePerson);
@@ -29,6 +40,21 @@ export function PeopleManager() {
         <Card.Description>Add everyone who's chipping in.</Card.Description>
       </Card.Header>
       <Card.Body>
+        <div className="mb-4 grid grid-cols-2 gap-3 border-b border-border pb-4">
+          <Input
+            label="Receipt name"
+            value={receiptName}
+            error={getWildcardError(receiptName)}
+            onChange={(e) => setReceiptName(e.target.value)}
+          />
+          <Input
+            label="Date"
+            type="date"
+            value={receiptDate}
+            error={getDateError(receiptDate)}
+            onChange={(e) => setReceiptDate(e.target.value)}
+          />
+        </div>
         <div className="space-y-3">
           {people.length > 0 && <p className="text-sm text-text-muted">Name</p>}
           {people.map((person, index) => (

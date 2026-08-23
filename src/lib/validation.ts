@@ -14,6 +14,16 @@ export const quantitySchema = z.number().int("Must be a whole number").positive(
 
 export const centsSchema = z.number().nonnegative("Must be zero or more");
 
+// Same wildcard rule as nameSchema, but the field is optional — empty is fine.
+export const optionalNameSchema = z
+  .string()
+  .refine((v) => !WILDCARD_PATTERN.test(v), WILDCARD_MESSAGE);
+
+// Optional — empty is fine, but a non-empty value must be a real calendar date.
+export const dateSchema = z
+  .string()
+  .refine((v) => v === "" || !Number.isNaN(Date.parse(v)), "Enter a valid date");
+
 function firstError(result: { success: boolean; error?: { issues: { message: string }[] } }): string | null {
   return result.success ? null : (result.error?.issues[0].message ?? null);
 }
@@ -28,6 +38,14 @@ export function getQuantityError(quantity: number): string | null {
 
 export function getMoneyError(cents: number): string | null {
   return firstError(centsSchema.safeParse(cents));
+}
+
+export function getWildcardError(value: string): string | null {
+  return firstError(optionalNameSchema.safeParse(value));
+}
+
+export function getDateError(value: string): string | null {
+  return firstError(dateSchema.safeParse(value));
 }
 
 export interface ItemFieldErrors {
