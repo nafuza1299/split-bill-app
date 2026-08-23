@@ -45,3 +45,12 @@ export function formatReceiptText(input: ReceiptTextInput): string {
 
   return lines.join("\n");
 }
+
+export function sanitizeFilename(name: string): string {
+  const cleaned = name
+    .trim()
+    .replace(/[^a-zA-Z0-9-_ ]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+  return cleaned || "receipt";
+}

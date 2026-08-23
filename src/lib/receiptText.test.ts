@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatReceiptText } from "./receiptText";
+import { formatReceiptText, sanitizeFilename } from "./receiptText";
 import type { ReceiptItem } from "./splitCalculator";
 
 describe("formatReceiptText", () => {
@@ -105,5 +105,24 @@ describe("formatReceiptText", () => {
     expect(text).toContain("Catering × 1 — $1,234,567.89");
     expect(text).toContain("Subtotal: $1,234,567.89");
     expect(text).toContain("Alice — $1,234,567.89");
+  });
+});
+
+describe("sanitizeFilename", () => {
+  it("falls back to 'receipt' for empty or whitespace-only input", () => {
+    expect(sanitizeFilename("")).toBe("receipt");
+    expect(sanitizeFilename("   ")).toBe("receipt");
+  });
+
+  it("strips special characters", () => {
+    expect(sanitizeFilename("Joe's Diner!")).toBe("Joes-Diner");
+  });
+
+  it("collapses spaces to single hyphens", () => {
+    expect(sanitizeFilename("  Team   Lunch  ")).toBe("Team-Lunch");
+  });
+
+  it("leaves already-clean names unchanged", () => {
+    expect(sanitizeFilename("already-clean")).toBe("already-clean");
   });
 });

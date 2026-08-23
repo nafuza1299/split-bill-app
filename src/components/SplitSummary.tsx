@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
 import { ReceiptCard } from "./ReceiptCard";
 import { formatMoney } from "../lib/money";
-import { formatReceiptText } from "../lib/receiptText";
+import { formatReceiptText, sanitizeFilename } from "../lib/receiptText";
 import { useReceiptStore, useSplitResult } from "../store/useReceiptStore";
 import { personItemShareCents, type ReceiptItem } from "../lib/splitCalculator";
 
@@ -18,6 +20,7 @@ export function SplitSummary() {
   const splitMode = useReceiptStore((s) => s.splitMode);
   const result = useSplitResult();
   const [copied, setCopied] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const itemsForPerson = (personId: string): ReceiptItem[] =>
     splitMode === "assign"
@@ -47,20 +50,69 @@ export function SplitSummary() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const filenameBase = sanitizeFilename(receiptName) + (receiptDate ? `-${receiptDate}` : "");
+
+  const captureDataUrl = async (): Promise<string> => {
+    if (!exportRef.current) throw new Error("Nothing to export");
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--color-bg").trim();
+    return toPng(exportRef.current, {
+      backgroundColor: bg,
+      filter: (node) => !(node instanceof HTMLElement && node.dataset.exportHide !== undefined),
+    });
+  };
+
+  const handleExportPng = async () => {
+    try {
+      const dataUrl = await captureDataUrl();
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${filenameBase}.png`;
+      a.click();
+    } catch (err) {
+      console.error("Export as PNG failed", err);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const dataUrl = await captureDataUrl();
+      const img = new Image();
+      img.src = dataUrl;
+      await img.decode();
+      const pdf = new jsPDF({
+        orientation: img.width > img.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [img.width, img.height],
+      });
+      pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
+      pdf.save(`${filenameBase}.pdf`);
+    } catch (err) {
+      console.error("Export as PDF failed", err);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={exportRef}>
       <ReceiptCard showSplit />
 
       <Card>
         <Card.Header>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <Card.Title>Summary</Card.Title>
               <Card.Description>Here's who owes what.</Card.Description>
             </div>
-            <Button variant="secondary" size="sm" onClick={handleCopy}>
-              {copied ? "Copied!" : "Copy to clipboard"}
-            </Button>
+            <div data-export-hide className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={handleCopy}>
+                {copied ? "Copied!" : "Copy to clipboard"}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleExportPng}>
+                Export as PNG
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleExportPdf}>
+                Export as PDF
+              </Button>
+            </div>
           </div>
         </Card.Header>
         <Card.Body>
