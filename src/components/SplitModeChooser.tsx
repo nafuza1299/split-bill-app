@@ -23,10 +23,13 @@ export function SplitModeChooser() {
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") setSplitMode(option.mode);
           }}
-          className={splitMode === option.mode ? "ring-2 ring-primary" : ""}
+          className={splitMode === option.mode ? "border-primary bg-primary/5 ring-2 ring-primary" : ""}
         >
           <Card.Body>
-            <Card.Title>{option.title}</Card.Title>
+            <div className="flex items-center justify-between">
+              <Card.Title>{option.title}</Card.Title>
+              {splitMode === option.mode && <span className="text-sm font-medium text-primary">Selected</span>}
+            </div>
             <Card.Description>{option.description}</Card.Description>
           </Card.Body>
         </Card>

@@ -27,9 +27,12 @@ export default function App() {
       <StepComponent />
 
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={state.prevStep} disabled={isFirstStep}>
-          Back
-        </Button>
+        {!isFirstStep && (
+          <Button variant="ghost" onClick={state.prevStep}>
+            Back
+          </Button>
+        )}
+        {isFirstStep && <div />}
         {!isLastStep && (
           <Button onClick={state.nextStep} disabled={!canAdvance(state.step, state)}>
             Next

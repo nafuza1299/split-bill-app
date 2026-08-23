@@ -32,7 +32,7 @@ export function ReceiptItemsEditor() {
             </div>
           )}
           {items.map((item, index) => (
-            <div key={item.id} className="grid grid-cols-12 items-end gap-2">
+            <div key={item.id} className="grid grid-cols-12 items-start gap-2">
               <div className="col-span-6">
                 <Input
                   label="Item name"

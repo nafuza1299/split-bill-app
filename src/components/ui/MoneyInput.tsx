@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { formatCentsToDollars, isPartialMoneyText, parseDollarsToCents } from "../../lib/money";
+import { useLayoutEffect, useRef, useState } from "react";
+import {
+  countDigitsBefore,
+  formatCentsToDollars,
+  formatWithThousandsSeparators,
+  indexAfterDigits,
+  isPartialMoneyText,
+  parseDollarsToCents,
+  stripCommas,
+} from "../../lib/money";
 
 export interface MoneyInputProps {
   label: string;
@@ -25,9 +33,18 @@ export function MoneyInput({
   placeholder = "0.00",
   error,
 }: MoneyInputProps) {
-  const [text, setText] = useState(() => formatCentsToDollars(valueCents));
+  const [text, setText] = useState(() => formatWithThousandsSeparators(formatCentsToDollars(valueCents)));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pendingCursorRef = useRef<number | null>(null);
   const inputId = `money-input-${label.replace(/\s+/g, "-").toLowerCase()}`;
   const errorId = `${inputId}-error`;
+
+  useLayoutEffect(() => {
+    if (pendingCursorRef.current !== null && inputRef.current) {
+      inputRef.current.setSelectionRange(pendingCursorRef.current, pendingCursorRef.current);
+      pendingCursorRef.current = null;
+    }
+  }, [text]);
 
   return (
     <div>
@@ -35,15 +52,20 @@ export function MoneyInput({
         {label}
       </label>
       <input
+        ref={inputRef}
         id={inputId}
         title={label}
         inputMode="decimal"
         placeholder={placeholder}
         value={text}
         onChange={(e) => {
-          if (!isPartialMoneyText(e.target.value)) return;
-          setText(e.target.value);
-          onChangeCents(parseDollarsToCents(e.target.value));
+          const raw = stripCommas(e.target.value);
+          if (!isPartialMoneyText(raw)) return;
+          const digitsBeforeCursor = countDigitsBefore(e.target.value, e.target.selectionStart ?? e.target.value.length);
+          const formatted = formatWithThousandsSeparators(raw);
+          pendingCursorRef.current = indexAfterDigits(formatted, digitsBeforeCursor);
+          setText(formatted);
+          onChangeCents(parseDollarsToCents(raw));
         }}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
