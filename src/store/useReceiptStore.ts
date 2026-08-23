@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { calculateSplit } from "../lib/splitCalculator";
 import type { ItemAssignments, Person, ReceiptItem, SplitMode, SplitResult } from "../lib/splitCalculator";
+import { getDuplicateNameIndices, getMoneyError, getNameError, isItemValid } from "../lib/validation";
 
 export type WizardStep = "people" | "items" | "mode" | "assign" | "summary";
 
@@ -100,10 +101,21 @@ export const useReceiptStore = create<ReceiptState>((set) => ({
 
 export function canAdvance(step: WizardStep, state: ReceiptState): boolean {
   switch (step) {
-    case "people":
-      return state.people.length > 0;
-    case "items":
-      return state.items.length > 0;
+    case "people": {
+      const duplicateIndices = getDuplicateNameIndices(state.people.map((p) => p.name));
+      return (
+        state.people.filter((p, i) => getNameError(p.name) === null && !duplicateIndices.has(i)).length >= 2
+      );
+    }
+    case "items": {
+      const duplicateIndices = getDuplicateNameIndices(state.items.map((i) => i.name));
+      return (
+        state.items.length > 0 &&
+        state.items.every((item, i) => isItemValid(item) && !duplicateIndices.has(i)) &&
+        getMoneyError(state.taxCents) === null &&
+        getMoneyError(state.serviceCents) === null
+      );
+    }
     case "mode":
       return state.splitMode !== null;
     case "assign":

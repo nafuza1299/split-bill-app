@@ -3,6 +3,7 @@ import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
 import { MoneyInput } from "./ui/MoneyInput";
 import { useReceiptStore } from "../store/useReceiptStore";
+import { DUPLICATE_NAME_MESSAGE, getDuplicateNameIndices, getMoneyError, getNameError, getQuantityError } from "../lib/validation";
 
 export function ReceiptItemsEditor() {
   const items = useReceiptStore((s) => s.items);
@@ -13,6 +14,7 @@ export function ReceiptItemsEditor() {
   const serviceCents = useReceiptStore((s) => s.serviceCents);
   const setTax = useReceiptStore((s) => s.setTax);
   const setService = useReceiptStore((s) => s.setService);
+  const duplicateIndices = getDuplicateNameIndices(items.map((i) => i.name));
 
   return (
     <Card>
@@ -29,7 +31,7 @@ export function ReceiptItemsEditor() {
               <span className="col-span-3">Unit price</span>
             </div>
           )}
-          {items.map((item) => (
+          {items.map((item, index) => (
             <div key={item.id} className="grid grid-cols-12 items-end gap-2">
               <div className="col-span-6">
                 <Input
@@ -37,6 +39,7 @@ export function ReceiptItemsEditor() {
                   hideLabel
                   placeholder="Item name"
                   value={item.name}
+                  error={getNameError(item.name) ?? (duplicateIndices.has(index) ? DUPLICATE_NAME_MESSAGE : null)}
                   onChange={(e) => updateItem(item.id, { name: e.target.value })}
                 />
               </div>
@@ -47,6 +50,7 @@ export function ReceiptItemsEditor() {
                   type="number"
                   min={1}
                   value={item.quantity}
+                  error={getQuantityError(item.quantity)}
                   onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) || 1 })}
                 />
               </div>
@@ -55,6 +59,7 @@ export function ReceiptItemsEditor() {
                   label="Unit price"
                   hideLabel
                   valueCents={item.unitPriceCents}
+                  error={getMoneyError(item.unitPriceCents)}
                   onChangeCents={(cents) => updateItem(item.id, { unitPriceCents: cents })}
                 />
               </div>
@@ -77,8 +82,13 @@ export function ReceiptItemsEditor() {
           </Button>
 
           <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
-            <MoneyInput label="Tax" valueCents={taxCents} onChangeCents={setTax} />
-            <MoneyInput label="Service charge" valueCents={serviceCents} onChangeCents={setService} />
+            <MoneyInput label="Tax" valueCents={taxCents} error={getMoneyError(taxCents)} onChangeCents={setTax} />
+            <MoneyInput
+              label="Service charge"
+              valueCents={serviceCents}
+              error={getMoneyError(serviceCents)}
+              onChangeCents={setService}
+            />
           </div>
         </div>
       </Card.Body>

@@ -3,6 +3,7 @@ import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
 import { useReceiptStore } from "../store/useReceiptStore";
+import { DUPLICATE_NAME_MESSAGE, getDuplicateNameIndices, getNameError, isNameTaken } from "../lib/validation";
 
 export function PeopleManager() {
   const people = useReceiptStore((s) => s.people);
@@ -13,10 +14,13 @@ export function PeopleManager() {
 
   const submitNewPerson = () => {
     const name = newName.trim();
-    if (!name) return;
+    if (!name || getNameError(name) !== null) return;
+    if (isNameTaken(name, people.map((p) => p.name))) return;
     addPerson(name);
     setNewName("");
   };
+
+  const duplicateIndices = getDuplicateNameIndices(people.map((p) => p.name));
 
   return (
     <Card>
@@ -27,12 +31,13 @@ export function PeopleManager() {
       <Card.Body>
         <div className="space-y-3">
           {people.length > 0 && <p className="text-sm text-text-muted">Name</p>}
-          {people.map((person) => (
+          {people.map((person, index) => (
             <div key={person.id} className="flex items-center gap-2">
               <Input
                 label={`Person name`}
                 hideLabel
                 value={person.name}
+                error={getNameError(person.name) ?? (duplicateIndices.has(index) ? DUPLICATE_NAME_MESSAGE : null)}
                 onChange={(e) => renamePerson(person.id, e.target.value)}
               />
               <Button
@@ -53,6 +58,12 @@ export function PeopleManager() {
               hideLabel
               placeholder="Add a person"
               value={newName}
+              error={
+                newName.length > 0
+                  ? (getNameError(newName) ??
+                    (isNameTaken(newName, people.map((p) => p.name)) ? DUPLICATE_NAME_MESSAGE : null))
+                  : null
+              }
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") submitNewPerson();

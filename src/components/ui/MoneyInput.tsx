@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatCentsToDollars, parseDollarsToCents } from "../../lib/money";
+import { formatCentsToDollars, isPartialMoneyText, parseDollarsToCents } from "../../lib/money";
 
 export interface MoneyInputProps {
   label: string;
@@ -8,6 +8,7 @@ export interface MoneyInputProps {
   onChangeCents: (cents: number) => void;
   className?: string;
   placeholder?: string;
+  error?: string | null;
 }
 
 const fieldStyles =
@@ -22,9 +23,11 @@ export function MoneyInput({
   onChangeCents,
   className = "",
   placeholder = "0.00",
+  error,
 }: MoneyInputProps) {
   const [text, setText] = useState(() => formatCentsToDollars(valueCents));
   const inputId = `money-input-${label.replace(/\s+/g, "-").toLowerCase()}`;
+  const errorId = `${inputId}-error`;
 
   return (
     <div>
@@ -38,11 +41,21 @@ export function MoneyInput({
         placeholder={placeholder}
         value={text}
         onChange={(e) => {
+          if (!isPartialMoneyText(e.target.value)) return;
           setText(e.target.value);
           onChangeCents(parseDollarsToCents(e.target.value));
         }}
-        className={[fieldStyles, className].filter(Boolean).join(" ")}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={[fieldStyles, error && "border-danger focus-visible:ring-danger", className]
+          .filter(Boolean)
+          .join(" ")}
       />
+      {error && (
+        <p id={errorId} role="alert" className="mt-1 text-sm text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
