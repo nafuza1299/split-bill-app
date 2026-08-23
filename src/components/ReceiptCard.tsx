@@ -2,13 +2,8 @@ import { Card } from "./catalyst/Card/Card";
 import { formatMoney } from "../lib/money";
 import { useReceiptStore, useSplitResult } from "../store/useReceiptStore";
 
-export interface ReceiptCardProps {
-  showSplit?: boolean;
-}
-
-export function ReceiptCard({ showSplit = false }: ReceiptCardProps) {
+export function ReceiptCard() {
   const items = useReceiptStore((s) => s.items);
-  const people = useReceiptStore((s) => s.people);
   const receiptName = useReceiptStore((s) => s.receiptName);
   const receiptDate = useReceiptStore((s) => s.receiptDate);
   const taxCents = useReceiptStore((s) => s.taxCents);
@@ -50,16 +45,6 @@ export function ReceiptCard({ showSplit = false }: ReceiptCardProps) {
             <span>${formatMoney(result.grandTotalCents)}</span>
           </div>
         </div>
-        {showSplit && (
-          <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-            {people.map((person) => (
-              <div key={person.id} className="flex items-center justify-between text-text-muted">
-                <span>{person.name}</span>
-                <span>${formatMoney(result.personTotals[person.id] ?? 0)}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </Card.Body>
     </Card>
   );

@@ -93,7 +93,7 @@ export function SplitSummary() {
 
   return (
     <div className="space-y-4" ref={exportRef}>
-      <ReceiptCard showSplit />
+      <ReceiptCard />
 
       <Card>
         <Card.Header>
