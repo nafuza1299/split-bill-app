@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { parseDollarsToCents } from "./money";
-import { calculateSplit, type ItemAssignments, type Person, type ReceiptItem } from "./splitCalculator";
+import {
+  calculateSplit,
+  itemTotalCents,
+  personItemShareCents,
+  type ItemAssignments,
+  type Person,
+  type ReceiptItem,
+} from "./splitCalculator";
 
 const person = (id: string, name: string): Person => ({ id, name });
 const item = (id: string, name: string, quantity: number, unitPriceCents: number): ReceiptItem => ({
@@ -35,6 +42,22 @@ describe("calculateSplit — even mode", () => {
     });
     expect(result.grandTotalCents).toBe(3000);
     for (const p of people) expect(result.personTotals[p.id]).toBe(1000);
+  });
+
+  it("splits tax and service evenly across everyone", () => {
+    const items = [item("i1", "Thing", 1, 3000)];
+    const result = calculateSplit({
+      people,
+      items,
+      taxCents: 300,
+      serviceCents: 150,
+      mode: "even",
+      assignments: {},
+    });
+    for (const p of people) {
+      expect(result.personTaxCents[p.id]).toBe(100);
+      expect(result.personServiceCents[p.id]).toBe(50);
+    }
   });
 
   it("distributes remainder cents without losing or duplicating any", () => {
@@ -78,6 +101,26 @@ describe("calculateSplit — assign mode", () => {
     expect(result.personTotals.p1).toBe(1650);
     expect(result.personTotals.p2).toBe(1100);
     expect(sumTotals(result.personTotals)).toBe(result.grandTotalCents);
+    expect(result.personTaxCents.p1).toBe(150);
+    expect(result.personTaxCents.p2).toBe(100);
+  });
+
+  it("splits tax and service proportionally to each person's item subtotal", () => {
+    const items = [item("shared", "Pizza", 1, 2000), item("solo", "Coffee", 1, 500)];
+    const assignments: ItemAssignments = { shared: ["p1", "p2"], solo: ["p1"] };
+    const result = calculateSplit({
+      people,
+      items,
+      taxCents: 250,
+      serviceCents: 100,
+      mode: "assign",
+      assignments,
+    });
+    // p1 is 60% of item subtotal, p2 is 40%.
+    expect(result.personTaxCents.p1).toBeCloseTo(150, 5);
+    expect(result.personTaxCents.p2).toBeCloseTo(100, 5);
+    expect(result.personServiceCents.p1).toBeCloseTo(60, 5);
+    expect(result.personServiceCents.p2).toBeCloseTo(40, 5);
   });
 
   it("sums exactly to the grand total even with an odd, non-divisible total", () => {
@@ -92,5 +135,27 @@ describe("calculateSplit — assign mode", () => {
       assignments,
     });
     expect(sumTotals(result.personTotals)).toBe(result.grandTotalCents);
+  });
+});
+
+describe("personItemShareCents", () => {
+  it("divides the item total across the assignees, not the full price", () => {
+    const pizza = item("i1", "Pizza", 1, 2000);
+    expect(personItemShareCents(pizza, 2)).toBe(1000);
+  });
+
+  it("returns the full item total when split among just one person", () => {
+    const coffee = item("i2", "Coffee", 1, 500);
+    expect(personItemShareCents(coffee, 1)).toBe(500);
+  });
+
+  it("returns 0 when split among nobody, without dividing by zero", () => {
+    const coffee = item("i2", "Coffee", 1, 500);
+    expect(personItemShareCents(coffee, 0)).toBe(0);
+  });
+
+  it("matches itemTotalCents when split among one person", () => {
+    const snacks = item("i3", "Snacks", 3, 333);
+    expect(personItemShareCents(snacks, 1)).toBe(itemTotalCents(snacks));
   });
 });

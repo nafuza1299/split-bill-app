@@ -13,6 +13,12 @@ export function formatCentsToDollars(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
+// Read-only display formatting, e.g. "$1,234.56" — adds thousands separators
+// on top of formatCentsToDollars for receipts/summaries.
+export function formatMoney(cents: number): string {
+  return formatWithThousandsSeparators(formatCentsToDollars(cents));
+}
+
 export function stripCommas(text: string): string {
   return text.replace(/,/g, "");
 }

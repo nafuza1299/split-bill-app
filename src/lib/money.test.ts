@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   countDigitsBefore,
+  formatMoney,
   formatWithThousandsSeparators,
   indexAfterDigits,
   isPartialMoneyText,
@@ -39,6 +40,12 @@ describe("formatWithThousandsSeparators", () => {
     expect(formatWithThousandsSeparators("1234.")).toBe("1,234.");
   });
   it("handles an empty string", () => expect(formatWithThousandsSeparators("")).toBe(""));
+});
+
+describe("formatMoney", () => {
+  it("adds thousands separators for large amounts", () => expect(formatMoney(123456789)).toBe("1,234,567.89"));
+  it("leaves small amounts ungrouped", () => expect(formatMoney(2000)).toBe("20.00"));
+  it("always shows two decimal places", () => expect(formatMoney(0)).toBe("0.00"));
 });
 
 describe("countDigitsBefore / indexAfterDigits round-trip", () => {

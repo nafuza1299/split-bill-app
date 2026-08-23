@@ -25,12 +25,21 @@ export interface SplitInput {
 
 export interface SplitResult {
   personTotals: Record<string, number>;
+  personTaxCents: Record<string, number>;
+  personServiceCents: Record<string, number>;
   itemSubtotalCents: number;
   grandTotalCents: number;
 }
 
-function itemTotalCents(item: ReceiptItem): number {
+export function itemTotalCents(item: ReceiptItem): number {
   return Math.round(item.quantity * item.unitPriceCents);
+}
+
+// A person's share of one item's price after the split (item total divided
+// across everyone it's split with — the assignees in "assign" mode, or the
+// whole group in "even" mode).
+export function personItemShareCents(item: ReceiptItem, splitAmong: number): number {
+  return splitAmong > 0 ? itemTotalCents(item) / splitAmong : 0;
 }
 
 export function calculateSplit(input: SplitInput): SplitResult {
@@ -39,14 +48,20 @@ export function calculateSplit(input: SplitInput): SplitResult {
   const grandTotalCents = itemSubtotalCents + taxCents + serviceCents;
 
   if (people.length === 0) {
-    return { personTotals: {}, itemSubtotalCents, grandTotalCents };
+    return { personTotals: {}, personTaxCents: {}, personServiceCents: {}, itemSubtotalCents, grandTotalCents };
   }
 
   const rawShare: Record<string, number> = {};
+  const personTaxCents: Record<string, number> = {};
+  const personServiceCents: Record<string, number> = {};
 
   if (mode === "even") {
     const share = grandTotalCents / people.length;
-    for (const person of people) rawShare[person.id] = share;
+    for (const person of people) {
+      rawShare[person.id] = share;
+      personTaxCents[person.id] = taxCents / people.length;
+      personServiceCents[person.id] = serviceCents / people.length;
+    }
   } else {
     const itemSubtotalPerPerson: Record<string, number> = {};
     for (const person of people) itemSubtotalPerPerson[person.id] = 0;
@@ -60,11 +75,14 @@ export function calculateSplit(input: SplitInput): SplitResult {
       }
     }
 
-    const extra = taxCents + serviceCents;
     for (const person of people) {
       const personSubtotal = itemSubtotalPerPerson[person.id] ?? 0;
-      const extraShare = itemSubtotalCents > 0 ? (personSubtotal / itemSubtotalCents) * extra : 0;
-      rawShare[person.id] = personSubtotal + extraShare;
+      const ratio = itemSubtotalCents > 0 ? personSubtotal / itemSubtotalCents : 0;
+      const taxShare = ratio * taxCents;
+      const serviceShare = ratio * serviceCents;
+      rawShare[person.id] = personSubtotal + taxShare + serviceShare;
+      personTaxCents[person.id] = taxShare;
+      personServiceCents[person.id] = serviceShare;
     }
   }
 
@@ -90,5 +108,5 @@ export function calculateSplit(input: SplitInput): SplitResult {
     personTotals[order[i % order.length].id] += 1;
   }
 
-  return { personTotals, itemSubtotalCents, grandTotalCents };
+  return { personTotals, personTaxCents, personServiceCents, itemSubtotalCents, grandTotalCents };
 }
