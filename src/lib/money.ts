@@ -13,11 +13,18 @@ export function formatCentsToDollars(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
-// Read-only display formatting, e.g. "1,234.56" — thousands separators via
-// the native Intl-backed toLocaleString (no need for the regex helpers below,
-// which exist specifically for live-typing cursor tracking in MoneyInput).
-export function formatMoney(cents: number): string {
-  return (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Read-only display formatting, e.g. "$1,234.56" — thousands separators and
+// currency symbol via the native Intl-backed toLocaleString (no need for the
+// regex helpers below, which exist specifically for live-typing cursor
+// tracking in MoneyInput). Decimals are pinned to 2 so zero-decimal
+// currencies (e.g. JPY) stay consistent with the app's cents-based storage.
+export function formatMoney(cents: number, currency: string): string {
+  return (cents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 export function stripCommas(text: string): string {

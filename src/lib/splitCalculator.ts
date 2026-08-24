@@ -1,6 +1,8 @@
 export interface Person {
   id: string;
   name: string;
+  phone?: string;
+  phoneCountry?: string;
 }
 
 export interface ReceiptItem {

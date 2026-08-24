@@ -9,6 +9,7 @@ export function ItemAssignmentGrid() {
   const people = useReceiptStore((s) => s.people);
   const assignments = useReceiptStore((s) => s.assignments);
   const toggleAssignment = useReceiptStore((s) => s.toggleAssignment);
+  const currency = useReceiptStore((s) => s.currency);
 
   return (
     <div className="space-y-4">
@@ -37,7 +38,7 @@ export function ItemAssignmentGrid() {
                 <tr key={item.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 text-text">{item.name || "Untitled item"}</td>
                   <td className="px-4 py-3 text-right text-text">
-                    ${formatMoney(item.quantity * item.unitPriceCents)}
+                    {formatMoney(item.quantity * item.unitPriceCents, currency)}
                   </td>
                   {people.map((person) => (
                     <td key={person.id} className="px-4 py-3 text-center">

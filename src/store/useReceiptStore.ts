@@ -15,6 +15,7 @@ interface ReceiptState {
   items: ReceiptItem[];
   taxCents: number;
   serviceCents: number;
+  currency: string;
   splitMode: SplitMode | null;
   assignments: ItemAssignments;
 
@@ -23,16 +24,33 @@ interface ReceiptState {
   addPerson: (name: string) => void;
   removePerson: (id: string) => void;
   renamePerson: (id: string, name: string) => void;
+  setPersonPhone: (id: string, phone: string) => void;
+  setPersonCountry: (id: string, phoneCountry: string) => void;
   addItem: () => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, patch: Partial<Omit<ReceiptItem, "id">>) => void;
   setTax: (cents: number) => void;
   setService: (cents: number) => void;
+  setCurrency: (currency: string) => void;
   setSplitMode: (mode: SplitMode) => void;
   toggleAssignment: (itemId: string, personId: string) => void;
   nextStep: () => void;
   prevStep: () => void;
+  resetAll: () => void;
 }
+
+const initialData = {
+  step: "people" as WizardStep,
+  receiptName: "",
+  receiptDate: "",
+  people: [] as Person[],
+  items: [] as ReceiptItem[],
+  taxCents: 0,
+  serviceCents: 0,
+  currency: "USD",
+  splitMode: null as SplitMode | null,
+  assignments: {} as ItemAssignments,
+};
 
 const stepOrder: WizardStep[] = ["people", "items", "mode", "summary"];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -44,15 +62,7 @@ function nextAfterMode(mode: SplitMode | null): WizardStep {
 export const useReceiptStore = create<ReceiptState>()(
   persist(
     (set) => ({
-      step: "people",
-      receiptName: "",
-      receiptDate: "",
-      people: [],
-      items: [],
-      taxCents: 0,
-      serviceCents: 0,
-      splitMode: null,
-      assignments: {},
+      ...initialData,
 
       setReceiptName: (name) => set({ receiptName: name }),
       setReceiptDate: (date) => set({ receiptDate: date }),
@@ -70,6 +80,10 @@ export const useReceiptStore = create<ReceiptState>()(
         })),
       renamePerson: (id, name) =>
         set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, name } : p)) })),
+      setPersonPhone: (id, phone) =>
+        set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, phone } : p)) })),
+      setPersonCountry: (id, phoneCountry) =>
+        set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, phoneCountry } : p)) })),
 
       addItem: () =>
         set((s) => ({
@@ -85,6 +99,7 @@ export const useReceiptStore = create<ReceiptState>()(
 
       setTax: (cents) => set({ taxCents: cents }),
       setService: (cents) => set({ serviceCents: cents }),
+      setCurrency: (currency) => set({ currency }),
       setSplitMode: (mode) => set({ splitMode: mode }),
 
       toggleAssignment: (itemId, personId) =>
@@ -110,6 +125,7 @@ export const useReceiptStore = create<ReceiptState>()(
           const i = stepOrder.indexOf(s.step);
           return { step: stepOrder[Math.max(i - 1, 0)] };
         }),
+      resetAll: () => set(initialData),
     }),
     { name: "split-bill-receipt", storage: createExpiringStorage(ONE_DAY_MS) },
   ),
@@ -139,6 +155,18 @@ export function canAdvance(step: WizardStep, state: ReceiptState): boolean {
     case "summary":
       return false;
   }
+}
+
+const advanceBlockedReasons: Record<Exclude<WizardStep, "summary">, string> = {
+  people: "Add at least two people with valid, non-duplicate names.",
+  items: "Add at least one valid item, and make sure tax and service amounts are valid.",
+  mode: "Choose how to split the bill.",
+  assign: "Assign every item to at least one person.",
+};
+
+export function getAdvanceBlockedReason(step: WizardStep, state: ReceiptState): string | null {
+  if (canAdvance(step, state) || step === "summary") return null;
+  return advanceBlockedReasons[step];
 }
 
 export function useSplitResult(): SplitResult {

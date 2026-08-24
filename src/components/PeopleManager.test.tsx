@@ -54,6 +54,39 @@ describe("PeopleManager", () => {
     expect(useReceiptStore.getState().people[0].name).toBe("Alicia");
   });
 
+  it("sets a person's phone via the row input", () => {
+    useReceiptStore.setState({ people: [alice] });
+    render(<PeopleManager />);
+    fireEvent.change(screen.getByLabelText("Alice phone number"), { target: { value: "+1 555 123 4567" } });
+    expect(useReceiptStore.getState().people[0].phone).toBe("+1 555 123 4567");
+  });
+
+  it("shows an inline error when the phone field contains a non-digit", () => {
+    useReceiptStore.setState({ people: [alice] });
+    render(<PeopleManager />);
+    fireEvent.change(screen.getByLabelText("Alice phone number"), { target: { value: "555-123" } });
+    expect(screen.getByRole("alert")).toHaveTextContent("Digits only, no letters or symbols");
+  });
+
+  it("shows no phone error for a digits-only value", () => {
+    useReceiptStore.setState({ people: [alice] });
+    render(<PeopleManager />);
+    fireEvent.change(screen.getByLabelText("Alice phone number"), { target: { value: "5551234567" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("sets a person's phone country via the row select", () => {
+    useReceiptStore.setState({ people: [alice] });
+    render(<PeopleManager />);
+    fireEvent.change(screen.getByLabelText("Alice phone country"), { target: { value: "ID" } });
+    expect(useReceiptStore.getState().people[0].phoneCountry).toBe("ID");
+  });
+
+  it("has no phone input on the new-person quick-add row", () => {
+    render(<PeopleManager />);
+    expect(screen.queryByLabelText(/new person phone/i)).not.toBeInTheDocument();
+  });
+
   it("shows no draft error while the new-person field is empty", () => {
     render(<PeopleManager />);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

@@ -196,6 +196,71 @@ describe("SplitSummary", () => {
     errorSpy.mockRestore();
   });
 
+  it("copies only one person's share text and shows per-row Copied feedback", async () => {
+    vi.useFakeTimers();
+    seedTwoPeopleOneItem();
+    render(<SplitSummary />);
+    fireEvent.click(screen.getByRole("button", { name: "Copy Alice's share" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const text = vi.mocked(navigator.clipboard.writeText).mock.calls[0][0];
+    expect(text).toContain("Alice");
+    expect(text).not.toContain("Bob");
+    expect(screen.getByRole("button", { name: "Copied Alice's share" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy Bob's share" })).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByRole("button", { name: "Copy Alice's share" })).toBeInTheDocument();
+  });
+
+  it("disables the WhatsApp button and shows a tooltip when a person has no phone", () => {
+    seedTwoPeopleOneItem();
+    render(<SplitSummary />);
+    expect(screen.getByRole("button", { name: "Share Alice's share via WhatsApp" })).toBeDisabled();
+  });
+
+  it("opens a wa.me link with the digit-only phone and encoded share text", () => {
+    useReceiptStore.setState({
+      people: [{ id: "p1", name: "Alice", phone: "+1 (555) 123-4567" }],
+      items: [pizza],
+      splitMode: "even",
+    });
+    render(<SplitSummary />);
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    fireEvent.click(screen.getByRole("button", { name: "Share Alice's share via WhatsApp" }));
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    const [url, target, features] = openSpy.mock.calls[0];
+    expect(url).toMatch(/^https:\/\/wa\.me\/15551234567\?text=/);
+    expect(target).toBe("_blank");
+    expect(features).toBe("noopener,noreferrer");
+    const encodedText = (url as string).split("?text=")[1];
+    expect(decodeURIComponent(encodedText)).toContain("Alice");
+    openSpy.mockRestore();
+  });
+
+  it("combines the selected country's dial code with a digits-only phone number", () => {
+    useReceiptStore.setState({
+      people: [{ id: "p1", name: "Alice", phone: "81234567890", phoneCountry: "ID" }],
+      items: [pizza],
+      splitMode: "even",
+    });
+    render(<SplitSummary />);
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    fireEvent.click(screen.getByRole("button", { name: "Share Alice's share via WhatsApp" }));
+    const [url] = openSpy.mock.calls[0];
+    expect(url).toMatch(/^https:\/\/wa\.me\/6281234567890\?text=/);
+    openSpy.mockRestore();
+  });
+
+  it("marks the per-person action buttons as export-hidden", () => {
+    seedTwoPeopleOneItem();
+    render(<SplitSummary />);
+    const copyButton = screen.getByRole("button", { name: "Copy Alice's share" });
+    expect(copyButton.closest("[data-export-hide]")).not.toBeNull();
+  });
+
   it("renders the per-person total, item share, tax share, and service share", () => {
     useReceiptStore.setState({
       people: twoPeople,

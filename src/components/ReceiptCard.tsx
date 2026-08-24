@@ -8,6 +8,7 @@ export function ReceiptCard() {
   const receiptDate = useReceiptStore((s) => s.receiptDate);
   const taxCents = useReceiptStore((s) => s.taxCents);
   const serviceCents = useReceiptStore((s) => s.serviceCents);
+  const currency = useReceiptStore((s) => s.currency);
   const result = useSplitResult();
 
   return (
@@ -23,26 +24,26 @@ export function ReceiptCard() {
               <span className="text-text">
                 {item.name || "Untitled item"} <span className="text-text-muted">× {item.quantity}</span>
               </span>
-              <span className="text-text">${formatMoney(item.quantity * item.unitPriceCents)}</span>
+              <span className="text-text">{formatMoney(item.quantity * item.unitPriceCents, currency)}</span>
             </div>
           ))}
         </div>
         <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
           <div className="flex items-center justify-between text-text-muted">
             <span>Subtotal</span>
-            <span>${formatMoney(result.itemSubtotalCents)}</span>
+            <span>{formatMoney(result.itemSubtotalCents, currency)}</span>
           </div>
           <div className="flex items-center justify-between text-text-muted">
             <span>Tax</span>
-            <span>${formatMoney(taxCents)}</span>
+            <span>{formatMoney(taxCents, currency)}</span>
           </div>
           <div className="flex items-center justify-between text-text-muted">
             <span>Service charge</span>
-            <span>${formatMoney(serviceCents)}</span>
+            <span>{formatMoney(serviceCents, currency)}</span>
           </div>
           <div className="flex items-center justify-between font-semibold text-text">
             <span>Total</span>
-            <span>${formatMoney(result.grandTotalCents)}</span>
+            <span>{formatMoney(result.grandTotalCents, currency)}</span>
           </div>
         </div>
       </Card.Body>

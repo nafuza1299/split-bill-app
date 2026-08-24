@@ -5,6 +5,7 @@ import {
   getItemFieldErrors,
   getMoneyError,
   getNameError,
+  getPhoneError,
   getQuantityError,
   getWildcardError,
   isItemValid,
@@ -89,6 +90,17 @@ describe("getDateError", () => {
   it("passes an empty value (optional field)", () => expect(getDateError("")).toBeNull());
   it("passes a valid ISO date", () => expect(getDateError("2026-08-23")).toBeNull());
   it("rejects an unparseable date", () => expect(getDateError("not-a-date")).not.toBeNull());
+});
+
+describe("getPhoneError", () => {
+  it("passes an empty value (optional field)", () => expect(getPhoneError("")).toBeNull());
+  it("passes a digits-only value", () => expect(getPhoneError("81234567890")).toBeNull());
+  it("rejects a letter", () => expect(getPhoneError("812abc")).toBe("Digits only, no letters or symbols"));
+  it("rejects a plus sign", () => expect(getPhoneError("+81234567890")).not.toBeNull());
+  it("rejects spaces or dashes", () => {
+    expect(getPhoneError("812 345 6789")).not.toBeNull();
+    expect(getPhoneError("812-345-6789")).not.toBeNull();
+  });
 });
 
 describe("getDuplicateNameIndices", () => {
