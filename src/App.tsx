@@ -20,6 +20,10 @@ export default function App() {
   const isFirstStep = state.step === "people";
   const isLastStep = state.step === "summary";
 
+  const clearAll = () => {
+    if (confirm("Clear everything you've entered?")) state.resetAll();
+  };
+
   return (
     <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 py-10">
       <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
@@ -32,7 +36,11 @@ export default function App() {
             Back
           </Button>
         )}
-        {isFirstStep && <div />}
+        {isFirstStep && (
+          <Button variant="destructive" onClick={clearAll}>
+            Clear all
+          </Button>
+        )}
         {!isLastStep && (
           <Button onClick={state.nextStep} disabled={!canAdvance(state.step, state)}>
             Next

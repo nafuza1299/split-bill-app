@@ -32,7 +32,20 @@ interface ReceiptState {
   toggleAssignment: (itemId: string, personId: string) => void;
   nextStep: () => void;
   prevStep: () => void;
+  resetAll: () => void;
 }
+
+const initialData = {
+  step: "people" as WizardStep,
+  receiptName: "",
+  receiptDate: "",
+  people: [] as Person[],
+  items: [] as ReceiptItem[],
+  taxCents: 0,
+  serviceCents: 0,
+  splitMode: null as SplitMode | null,
+  assignments: {} as ItemAssignments,
+};
 
 const stepOrder: WizardStep[] = ["people", "items", "mode", "summary"];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -44,15 +57,7 @@ function nextAfterMode(mode: SplitMode | null): WizardStep {
 export const useReceiptStore = create<ReceiptState>()(
   persist(
     (set) => ({
-      step: "people",
-      receiptName: "",
-      receiptDate: "",
-      people: [],
-      items: [],
-      taxCents: 0,
-      serviceCents: 0,
-      splitMode: null,
-      assignments: {},
+      ...initialData,
 
       setReceiptName: (name) => set({ receiptName: name }),
       setReceiptDate: (date) => set({ receiptDate: date }),
@@ -110,6 +115,7 @@ export const useReceiptStore = create<ReceiptState>()(
           const i = stepOrder.indexOf(s.step);
           return { step: stepOrder[Math.max(i - 1, 0)] };
         }),
+      resetAll: () => set(initialData),
     }),
     { name: "split-bill-receipt", storage: createExpiringStorage(ONE_DAY_MS) },
   ),
