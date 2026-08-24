@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.20",
     "@tailwindcss/vite": "^4.3.3",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",

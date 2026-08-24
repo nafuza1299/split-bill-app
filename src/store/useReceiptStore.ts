@@ -147,6 +147,18 @@ export function canAdvance(step: WizardStep, state: ReceiptState): boolean {
   }
 }
 
+const advanceBlockedReasons: Record<Exclude<WizardStep, "summary">, string> = {
+  people: "Add at least two people with valid, non-duplicate names.",
+  items: "Add at least one valid item, and make sure tax and service amounts are valid.",
+  mode: "Choose how to split the bill.",
+  assign: "Assign every item to at least one person.",
+};
+
+export function getAdvanceBlockedReason(step: WizardStep, state: ReceiptState): string | null {
+  if (canAdvance(step, state) || step === "summary") return null;
+  return advanceBlockedReasons[step];
+}
+
 export function useSplitResult(): SplitResult {
   const { people, items, taxCents, serviceCents, splitMode, assignments } = useReceiptStore();
   return calculateSplit({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAdvance, useReceiptStore } from "./useReceiptStore";
+import { canAdvance, getAdvanceBlockedReason, useReceiptStore } from "./useReceiptStore";
 import type { WizardStep } from "./useReceiptStore";
 
 const baseState = {
@@ -101,6 +101,21 @@ describe("canAdvance — items/mode/assign/summary steps", () => {
 
   it("never allows advancing past the summary step", () => {
     expect(canAdvance("summary", baseState as never)).toBe(false);
+  });
+});
+
+describe("getAdvanceBlockedReason", () => {
+  it("returns null once the step is satisfied", () => {
+    const state = { ...baseState, splitMode: "even" as const };
+    expect(getAdvanceBlockedReason("mode", state as never)).toBeNull();
+  });
+
+  it("explains why the mode step is blocked", () => {
+    expect(getAdvanceBlockedReason("mode", baseState as never)).toBe("Choose how to split the bill.");
+  });
+
+  it("returns null for the summary step regardless of state", () => {
+    expect(getAdvanceBlockedReason("summary", baseState as never)).toBeNull();
   });
 });
 

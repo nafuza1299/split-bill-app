@@ -43,6 +43,7 @@ export function PeopleManager() {
         <div className="mb-4 grid grid-cols-2 gap-3 border-b border-border pb-4">
           <Input
             label="Receipt name"
+            placeholder="Add receipt name"
             value={receiptName}
             error={getWildcardError(receiptName)}
             onChange={(e) => setReceiptName(e.target.value)}
