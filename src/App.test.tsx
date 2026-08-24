@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
 import { useReceiptStore } from "./store/useReceiptStore";
@@ -46,5 +46,27 @@ describe("App", () => {
     expect(useReceiptStore.getState().step).toBe("items");
     fireEvent.click(screen.getByText("Back"));
     expect(useReceiptStore.getState().step).toBe("people");
+  });
+
+  describe("Clear all", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("resets state when the user confirms", () => {
+      useReceiptStore.setState({ people: twoPeople });
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      render(<App />);
+      fireEvent.click(screen.getByText("Clear all"));
+      expect(useReceiptStore.getState().people).toHaveLength(0);
+    });
+
+    it("leaves state untouched when the user cancels", () => {
+      useReceiptStore.setState({ people: twoPeople });
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      render(<App />);
+      fireEvent.click(screen.getByText("Clear all"));
+      expect(useReceiptStore.getState().people).toEqual(twoPeople);
+    });
   });
 });

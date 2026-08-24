@@ -31,4 +31,11 @@ describe("createExpiringStorage", () => {
     expect(storage.getItem("key")).toBeNull();
     expect(localStorage.getItem("key")).toBeNull();
   });
+
+  it("removes a stored value via removeItem", () => {
+    const storage = createExpiringStorage(ONE_DAY_MS);
+    storage.setItem("key", { state: { foo: "bar" } });
+    storage.removeItem("key");
+    expect(localStorage.getItem("key")).toBeNull();
+  });
 });
