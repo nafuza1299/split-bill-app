@@ -15,6 +15,7 @@ export interface ReceiptTextInput {
   serviceCents: number;
   itemSubtotalCents: number;
   grandTotalCents: number;
+  currency: string;
   people: PersonBreakdown[];
 }
 
@@ -24,23 +25,23 @@ export function formatReceiptText(input: ReceiptTextInput): string {
   lines.push("");
 
   for (const item of input.items) {
-    const lineTotal = formatMoney(item.quantity * item.unitPriceCents);
-    lines.push(`${item.name || "Untitled item"} × ${item.quantity} — $${lineTotal}`);
+    const lineTotal = formatMoney(item.quantity * item.unitPriceCents, input.currency);
+    lines.push(`${item.name || "Untitled item"} × ${item.quantity} — ${lineTotal}`);
   }
 
   lines.push(
     "",
-    `Subtotal: $${formatMoney(input.itemSubtotalCents)}`,
-    `Tax: $${formatMoney(input.taxCents)}`,
-    `Service charge: $${formatMoney(input.serviceCents)}`,
-    `Total: $${formatMoney(input.grandTotalCents)}`,
+    `Subtotal: ${formatMoney(input.itemSubtotalCents, input.currency)}`,
+    `Tax: ${formatMoney(input.taxCents, input.currency)}`,
+    `Service charge: ${formatMoney(input.serviceCents, input.currency)}`,
+    `Total: ${formatMoney(input.grandTotalCents, input.currency)}`,
     "",
     "Split:",
   );
 
   for (const person of input.people) {
     const suffix = person.itemNames.length > 0 ? ` (${person.itemNames.join(", ")})` : "";
-    lines.push(`${person.name} — $${formatMoney(person.totalCents)}${suffix}`);
+    lines.push(`${person.name} — ${formatMoney(person.totalCents, input.currency)}${suffix}`);
   }
 
   return lines.join("\n");

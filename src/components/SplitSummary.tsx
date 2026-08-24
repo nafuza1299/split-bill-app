@@ -27,6 +27,7 @@ export function SplitSummary() {
   const serviceCents = useReceiptStore((s) => s.serviceCents);
   const assignments = useReceiptStore((s) => s.assignments);
   const splitMode = useReceiptStore((s) => s.splitMode);
+  const currency = useReceiptStore((s) => s.currency);
   const result = useSplitResult();
   const [copied, setCopied] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -48,6 +49,7 @@ export function SplitSummary() {
       serviceCents,
       itemSubtotalCents: result.itemSubtotalCents,
       grandTotalCents: result.grandTotalCents,
+      currency,
       people: people.map((person) => ({
         name: person.name,
         totalCents: safeGet(result.personTotals, person.id),
@@ -131,23 +133,23 @@ export function SplitSummary() {
                 <div className="flex items-center justify-between">
                   <span className="text-text">{person.name}</span>
                   <span className="font-medium text-text">
-                    ${formatMoney(safeGet(result.personTotals, person.id))}
+                    {formatMoney(safeGet(result.personTotals, person.id), currency)}
                   </span>
                 </div>
                 <div className="mt-1.5 space-y-1">
                   {itemsForPerson(person.id).map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-sm text-text-muted">
                       <span>{item.name || "Untitled item"}</span>
-                      <span>${formatMoney(personItemShareCents(item, splitAmongCount(item.id)))}</span>
+                      <span>{formatMoney(personItemShareCents(item, splitAmongCount(item.id)), currency)}</span>
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-sm text-text-muted">
                     <span>Tax</span>
-                    <span>${formatMoney(safeGet(result.personTaxCents, person.id))}</span>
+                    <span>{formatMoney(safeGet(result.personTaxCents, person.id), currency)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-text-muted">
                     <span>Service charge</span>
-                    <span>${formatMoney(safeGet(result.personServiceCents, person.id))}</span>
+                    <span>{formatMoney(safeGet(result.personServiceCents, person.id), currency)}</span>
                   </div>
                 </div>
               </div>
@@ -156,7 +158,7 @@ export function SplitSummary() {
         </Card.Body>
         <Card.Footer>
           <span className="text-sm text-text-muted">Total</span>
-          <span className="text-sm font-semibold text-text">${formatMoney(result.grandTotalCents)}</span>
+          <span className="text-sm font-semibold text-text">{formatMoney(result.grandTotalCents, currency)}</span>
         </Card.Footer>
       </Card>
     </div>

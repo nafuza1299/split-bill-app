@@ -17,6 +17,7 @@ describe("formatReceiptText", () => {
       serviceCents: 100,
       itemSubtotalCents: 3000,
       grandTotalCents: 3350,
+      currency: "USD",
       people: [],
     });
     const lines = text.split("\n");
@@ -33,6 +34,7 @@ describe("formatReceiptText", () => {
       serviceCents: 0,
       itemSubtotalCents: 0,
       grandTotalCents: 0,
+      currency: "USD",
       people: [],
     });
     const lines = text.split("\n");
@@ -49,6 +51,7 @@ describe("formatReceiptText", () => {
       serviceCents: 0,
       itemSubtotalCents: 3000,
       grandTotalCents: 3000,
+      currency: "USD",
       people: [],
     });
     expect(text).toContain("Pizza × 1 — $20.00");
@@ -64,6 +67,7 @@ describe("formatReceiptText", () => {
       serviceCents: 100,
       itemSubtotalCents: 3000,
       grandTotalCents: 3350,
+      currency: "USD",
       people: [],
     });
     expect(text).toContain("Subtotal: $30.00");
@@ -81,6 +85,7 @@ describe("formatReceiptText", () => {
       serviceCents: 0,
       itemSubtotalCents: 0,
       grandTotalCents: 3000,
+      currency: "USD",
       people: [
         { name: "Alice", totalCents: 1650, itemNames: ["Pizza", "Coffee"] },
         { name: "Bob", totalCents: 1000, itemNames: [] },
@@ -100,6 +105,7 @@ describe("formatReceiptText", () => {
       serviceCents: 0,
       itemSubtotalCents: 123456789,
       grandTotalCents: 123456789,
+      currency: "USD",
       people: [{ name: "Alice", totalCents: 123456789, itemNames: [] }],
     });
     expect(text).toContain("Catering × 1 — $1,234,567.89");

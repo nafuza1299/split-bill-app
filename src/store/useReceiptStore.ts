@@ -15,6 +15,7 @@ interface ReceiptState {
   items: ReceiptItem[];
   taxCents: number;
   serviceCents: number;
+  currency: string;
   splitMode: SplitMode | null;
   assignments: ItemAssignments;
 
@@ -28,6 +29,7 @@ interface ReceiptState {
   updateItem: (id: string, patch: Partial<Omit<ReceiptItem, "id">>) => void;
   setTax: (cents: number) => void;
   setService: (cents: number) => void;
+  setCurrency: (currency: string) => void;
   setSplitMode: (mode: SplitMode) => void;
   toggleAssignment: (itemId: string, personId: string) => void;
   nextStep: () => void;
@@ -43,6 +45,7 @@ const initialData = {
   items: [] as ReceiptItem[],
   taxCents: 0,
   serviceCents: 0,
+  currency: "USD",
   splitMode: null as SplitMode | null,
   assignments: {} as ItemAssignments,
 };
@@ -90,6 +93,7 @@ export const useReceiptStore = create<ReceiptState>()(
 
       setTax: (cents) => set({ taxCents: cents }),
       setService: (cents) => set({ serviceCents: cents }),
+      setCurrency: (currency) => set({ currency }),
       setSplitMode: (mode) => set({ splitMode: mode }),
 
       toggleAssignment: (itemId, personId) =>
