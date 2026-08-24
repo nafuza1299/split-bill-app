@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
 import { useReceiptStore } from "./store/useReceiptStore";
+import { twoPeople } from "./test/fixtures";
 
 describe("App", () => {
   it("renders the People step by default and hides the Back button", () => {
@@ -33,23 +34,13 @@ describe("App", () => {
   });
 
   it("enables Next when canAdvance is true", () => {
-    useReceiptStore.setState({
-      people: [
-        { id: "p1", name: "Alice" },
-        { id: "p2", name: "Bob" },
-      ],
-    });
+    useReceiptStore.setState({ people: twoPeople });
     render(<App />);
     expect(screen.getByText("Next")).not.toBeDisabled();
   });
 
   it("calls nextStep/prevStep on button click", () => {
-    useReceiptStore.setState({
-      people: [
-        { id: "p1", name: "Alice" },
-        { id: "p2", name: "Bob" },
-      ],
-    });
+    useReceiptStore.setState({ people: twoPeople });
     render(<App />);
     fireEvent.click(screen.getByText("Next"));
     expect(useReceiptStore.getState().step).toBe("items");

@@ -54,6 +54,7 @@ export function calculateSplit(input: SplitInput): SplitResult {
   const rawShare: Record<string, number> = {};
   const personTaxCents: Record<string, number> = {};
   const personServiceCents: Record<string, number> = {};
+  let unassignedItemsCents = 0;
 
   if (mode === "even") {
     const share = grandTotalCents / people.length;
@@ -68,7 +69,10 @@ export function calculateSplit(input: SplitInput): SplitResult {
 
     for (const item of items) {
       const assignees = assignments[item.id] ?? [];
-      if (assignees.length === 0) continue;
+      if (assignees.length === 0) {
+        unassignedItemsCents += itemTotalCents(item);
+        continue;
+      }
       const share = itemTotalCents(item) / assignees.length;
       for (const personId of assignees) {
         itemSubtotalPerPerson[personId] = (itemSubtotalPerPerson[personId] ?? 0) + share;
@@ -88,10 +92,12 @@ export function calculateSplit(input: SplitInput): SplitResult {
 
   // Largest-remainder (Hamilton's) rounding: floor every share, then hand the
   // leftover cents to whoever has the largest fractional remainder, so
-  // personTotals always sums exactly to grandTotalCents.
+  // personTotals always sums exactly to grandTotalCents minus whatever an
+  // unassigned item cost (nobody claimed it, so nobody is billed for it).
+  const distributableCents = grandTotalCents - unassignedItemsCents;
   const floors = people.map((p) => Math.floor(rawShare[p.id]));
   const sumFloors = floors.reduce((a, b) => a + b, 0);
-  const remaining = grandTotalCents - sumFloors;
+  const remaining = distributableCents - sumFloors;
 
   const order = people
     .map((p, i) => ({ id: p.id, remainder: rawShare[p.id] - floors[i] }))

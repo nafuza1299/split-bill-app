@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { SplitSummary } from "./SplitSummary";
+import { SplitSummary, shouldIncludeInExport } from "./SplitSummary";
 import { useReceiptStore } from "../store/useReceiptStore";
-import * as storeModule from "../store/useReceiptStore";
+import { alice, pizza, twoPeople } from "../test/fixtures";
 
 const { addImageMock, saveMock } = vi.hoisted(() => ({
   addImageMock: vi.fn(),
@@ -16,25 +16,13 @@ vi.mock("jspdf", () => ({
 }));
 
 vi.mock("html-to-image", () => ({
-  toPng: vi.fn((el: HTMLElement, opts?: { filter?: (n: Node) => boolean }) => {
-    // Invoke the real filter callback against both a normal node and a
-    // data-export-hide node so its own lines/branches count toward coverage,
-    // even though the real rasterizer never runs under jsdom.
-    opts?.filter?.(el);
-    const hidden = document.createElement("div");
-    hidden.dataset.exportHide = "";
-    opts?.filter?.(hidden);
-    opts?.filter?.(document.createTextNode("text") as unknown as HTMLElement);
-    return Promise.resolve("data:image/png;base64,abc");
-  }),
+  toPng: vi.fn(() => Promise.resolve("data:image/png;base64,abc")),
 }));
 
 import { toPng } from "html-to-image";
 
 describe("SplitSummary", () => {
   beforeEach(() => {
-    Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
-    HTMLImageElement.prototype.decode = vi.fn().mockResolvedValue(undefined);
     vi.mocked(toPng).mockResolvedValue("data:image/png;base64,abc");
     addImageMock.mockClear();
     saveMock.mockClear();
@@ -48,11 +36,8 @@ describe("SplitSummary", () => {
     useReceiptStore.setState({
       receiptName: "Joe's Diner",
       receiptDate: "2026-08-23",
-      people: [
-        { id: "p1", name: "Alice" },
-        { id: "p2", name: "Bob" },
-      ],
-      items: [{ id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 }],
+      people: twoPeople,
+      items: [pizza],
       splitMode: "assign",
       assignments: { i1: ["p1", "p2"] },
     });
@@ -60,11 +45,8 @@ describe("SplitSummary", () => {
 
   it("shows all items for every person when splitMode is even", () => {
     useReceiptStore.setState({
-      people: [
-        { id: "p1", name: "Alice" },
-        { id: "p2", name: "Bob" },
-      ],
-      items: [{ id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 }],
+      people: twoPeople,
+      items: [pizza],
       splitMode: "even",
     });
     render(<SplitSummary />);
@@ -74,10 +56,7 @@ describe("SplitSummary", () => {
 
   it("shows only assigned items per person when splitMode is assign", () => {
     useReceiptStore.setState({
-      people: [
-        { id: "p1", name: "Alice" },
-        { id: "p2", name: "Bob" },
-      ],
+      people: twoPeople,
       items: [
         { id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 },
         { id: "i2", name: "Coffee", quantity: 1, unitPriceCents: 500 },
@@ -92,7 +71,7 @@ describe("SplitSummary", () => {
 
   it("excludes an item that has no entry in the assignments map at all", () => {
     useReceiptStore.setState({
-      people: [{ id: "p1", name: "Alice" }],
+      people: [alice],
       items: [{ id: "i1", name: "", quantity: 1, unitPriceCents: 2000 }],
       splitMode: "assign",
       assignments: {},
@@ -104,7 +83,7 @@ describe("SplitSummary", () => {
 
   it("shows an Untitled item fallback for an assigned item with no name", () => {
     useReceiptStore.setState({
-      people: [{ id: "p1", name: "Alice" }],
+      people: [alice],
       items: [{ id: "i1", name: "", quantity: 1, unitPriceCents: 2000 }],
       splitMode: "assign",
       assignments: { i1: ["p1"] },
@@ -117,7 +96,7 @@ describe("SplitSummary", () => {
     useReceiptStore.setState({
       receiptName: "Joe's Diner",
       receiptDate: "",
-      people: [{ id: "p1", name: "Alice" }],
+      people: [alice],
       items: [{ id: "i1", name: "", quantity: 1, unitPriceCents: 2000 }],
       splitMode: "even",
     });
@@ -152,6 +131,8 @@ describe("SplitSummary", () => {
     render(<SplitSummary />);
     let captured: HTMLAnchorElement | null = null;
     const originalCreateElement = document.createElement.bind(document);
+    // Stub the real click so jsdom doesn't attempt (and fail) to navigate to the data: URL.
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const createSpy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
       const el = originalCreateElement(tag);
       if (tag === "a") captured = el as HTMLAnchorElement;
@@ -162,6 +143,7 @@ describe("SplitSummary", () => {
     expect(toPng).toHaveBeenCalled();
     expect(captured!.href).toContain("data:image/png");
     expect(captured!.download).toBe("Joes-Diner-2026-08-23.png");
+    clickSpy.mockRestore();
     createSpy.mockRestore();
   });
 
@@ -183,7 +165,7 @@ describe("SplitSummary", () => {
     useReceiptStore.setState({
       receiptName: "Joe's Diner",
       receiptDate: "",
-      people: [{ id: "p1", name: "Alice" }],
+      people: [alice],
       items: [],
     });
     render(<SplitSummary />);
@@ -214,34 +196,10 @@ describe("SplitSummary", () => {
     errorSpy.mockRestore();
   });
 
-  it("falls back to 0 for a person missing from the split result (defensive)", async () => {
-    // Structurally, `useSplitResult()` always includes every person from the
-    // store's `people` array (it derives from the same list), so the `?? 0`
-    // fallbacks reading `result.personTotals`/`personTaxCents`/`personServiceCents`
-    // can't be reached through the real store. Stub the result directly to
-    // exercise that defensive fallback.
-    useReceiptStore.setState({ people: [{ id: "p1", name: "Alice" }], items: [] });
-    const spy = vi.spyOn(storeModule, "useSplitResult").mockReturnValue({
-      personTotals: {},
-      personTaxCents: {},
-      personServiceCents: {},
-      itemSubtotalCents: 0,
-      grandTotalCents: 0,
-    });
-    render(<SplitSummary />);
-    expect(screen.getAllByText("$0.00").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "Copy to clipboard" }));
-    await vi.waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
-    spy.mockRestore();
-  });
-
   it("renders the per-person total, item share, tax share, and service share", () => {
     useReceiptStore.setState({
-      people: [
-        { id: "p1", name: "Alice" },
-        { id: "p2", name: "Bob" },
-      ],
-      items: [{ id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 }],
+      people: twoPeople,
+      items: [pizza],
       taxCents: 250,
       serviceCents: 100,
       splitMode: "assign",
@@ -252,5 +210,21 @@ describe("SplitSummary", () => {
     expect(screen.getByText("Bob")).toBeInTheDocument();
     expect(screen.getAllByText("Tax")).toHaveLength(3); // ReceiptCard + 2 person rows
     expect(screen.getAllByText("Service charge")).toHaveLength(3);
+  });
+});
+
+describe("shouldIncludeInExport", () => {
+  it("includes a normal element", () => {
+    expect(shouldIncludeInExport(document.createElement("div"))).toBe(true);
+  });
+
+  it("excludes an element marked data-export-hide", () => {
+    const hidden = document.createElement("div");
+    hidden.dataset.exportHide = "";
+    expect(shouldIncludeInExport(hidden)).toBe(false);
+  });
+
+  it("includes non-HTMLElement nodes (e.g. text nodes)", () => {
+    expect(shouldIncludeInExport(document.createTextNode("text"))).toBe(true);
   });
 });

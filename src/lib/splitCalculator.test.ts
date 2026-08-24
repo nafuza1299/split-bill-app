@@ -90,7 +90,8 @@ describe("calculateSplit — assign mode edge cases", () => {
       assignments: {},
     });
     expect(result.itemSubtotalCents).toBe(500);
-    expect(sumTotals(result.personTotals)).toBe(result.grandTotalCents);
+    expect(result.personTotals.p1).toBe(0);
+    expect(result.personTotals.p2).toBe(0);
   });
 
   it("falls back the tax/service ratio to 0 when itemSubtotalCents is 0", () => {

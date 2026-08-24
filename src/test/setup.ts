@@ -23,4 +23,6 @@ Object.defineProperty(window, "matchMedia", {
 
 beforeEach(() => {
   resetReceiptStore();
+  Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+  HTMLImageElement.prototype.decode = vi.fn().mockResolvedValue(undefined);
 });

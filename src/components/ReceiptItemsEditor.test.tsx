@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { ReceiptItemsEditor } from "./ReceiptItemsEditor";
 import { useReceiptStore } from "../store/useReceiptStore";
+import { pizza } from "../test/fixtures";
 
 describe("ReceiptItemsEditor", () => {
   it("hides the column header when there are no items", () => {
@@ -10,7 +11,7 @@ describe("ReceiptItemsEditor", () => {
   });
 
   it("shows the column header when there are items", () => {
-    useReceiptStore.setState({ items: [{ id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 }] });
+    useReceiptStore.setState({ items: [pizza] });
     render(<ReceiptItemsEditor />);
     expect(screen.getByText("Qty")).toBeInTheDocument();
   });
@@ -51,14 +52,14 @@ describe("ReceiptItemsEditor", () => {
   });
 
   it("removes an item on click of its remove button", () => {
-    useReceiptStore.setState({ items: [{ id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 }] });
+    useReceiptStore.setState({ items: [pizza] });
     render(<ReceiptItemsEditor />);
     fireEvent.click(screen.getByRole("button", { name: "Remove Pizza" }));
     expect(useReceiptStore.getState().items).toHaveLength(0);
   });
 
   it("updates quantity to a valid number", () => {
-    useReceiptStore.setState({ items: [{ id: "i1", name: "Pizza", quantity: 1, unitPriceCents: 2000 }] });
+    useReceiptStore.setState({ items: [pizza] });
     render(<ReceiptItemsEditor />);
     fireEvent.change(screen.getAllByLabelText("Quantity")[0], { target: { value: "3" } });
     expect(useReceiptStore.getState().items[0].quantity).toBe(3);

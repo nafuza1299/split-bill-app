@@ -9,6 +9,15 @@ import { formatReceiptText, sanitizeFilename } from "../lib/receiptText";
 import { useReceiptStore, useSplitResult } from "../store/useReceiptStore";
 import { personItemShareCents, type ReceiptItem } from "../lib/splitCalculator";
 
+export function shouldIncludeInExport(node: Node): boolean {
+  return !(node instanceof HTMLElement && node.dataset.exportHide !== undefined);
+}
+
+function safeGet(map: Record<string, number>, id: string): number {
+  // v8 ignore next -- calculateSplit always populates every person in `people`; unreachable through the real store.
+  return map[id] ?? 0;
+}
+
 export function SplitSummary() {
   const receiptName = useReceiptStore((s) => s.receiptName);
   const receiptDate = useReceiptStore((s) => s.receiptDate);
@@ -41,7 +50,7 @@ export function SplitSummary() {
       grandTotalCents: result.grandTotalCents,
       people: people.map((person) => ({
         name: person.name,
-        totalCents: result.personTotals[person.id] ?? 0,
+        totalCents: safeGet(result.personTotals, person.id),
         itemNames: itemsForPerson(person.id).map((item) => item.name || "Untitled item"),
       })),
     });
@@ -57,7 +66,7 @@ export function SplitSummary() {
     const bg = getComputedStyle(document.documentElement).getPropertyValue("--color-bg").trim();
     return toPng(exportRef.current, {
       backgroundColor: bg,
-      filter: (node) => !(node instanceof HTMLElement && node.dataset.exportHide !== undefined),
+      filter: shouldIncludeInExport,
     });
   };
 
@@ -122,7 +131,7 @@ export function SplitSummary() {
                 <div className="flex items-center justify-between">
                   <span className="text-text">{person.name}</span>
                   <span className="font-medium text-text">
-                    ${formatMoney(result.personTotals[person.id] ?? 0)}
+                    ${formatMoney(safeGet(result.personTotals, person.id))}
                   </span>
                 </div>
                 <div className="mt-1.5 space-y-1">
@@ -134,11 +143,11 @@ export function SplitSummary() {
                   ))}
                   <div className="flex items-center justify-between text-sm text-text-muted">
                     <span>Tax</span>
-                    <span>${formatMoney(result.personTaxCents[person.id] ?? 0)}</span>
+                    <span>${formatMoney(safeGet(result.personTaxCents, person.id))}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-text-muted">
                     <span>Service charge</span>
-                    <span>${formatMoney(result.personServiceCents[person.id] ?? 0)}</span>
+                    <span>${formatMoney(safeGet(result.personServiceCents, person.id))}</span>
                   </div>
                 </div>
               </div>
