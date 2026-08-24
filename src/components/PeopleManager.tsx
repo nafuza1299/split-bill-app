@@ -58,7 +58,7 @@ export function PeopleManager() {
         <div className="space-y-3">
           {people.length > 0 && <p className="text-sm text-text-muted">Name</p>}
           {people.map((person, index) => (
-            <div key={person.id} className="flex items-center gap-2">
+            <div key={person.id} className="flex items-start gap-2">
               <Input
                 label={`Person name`}
                 hideLabel
@@ -78,7 +78,7 @@ export function PeopleManager() {
             </div>
           ))}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2">
             <Input
               label="New person name"
               hideLabel
