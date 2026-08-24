@@ -3,11 +3,13 @@
 A small web app for splitting a shared bill (a restaurant receipt, groceries,
 etc.) fairly between a group of people.
 
-You walk through a short wizard: add the people in the group, enter the
+You walk through a short wizard: add the people in the group (each with an
+optional phone number and country dial code), pick a currency, enter the
 receipt's line items (with quantity and price) plus tax and service charge,
 then pick how to split — evenly across everyone, or by assigning each item to
 the specific people who ordered it. The final summary shows exactly how much
-each person owes, and can be exported as a PNG or PDF to share.
+each person owes, with a copy-to-clipboard and a WhatsApp share button per
+person, and can be exported as a PNG or PDF to share.
 
 ## Tech stack
 
@@ -28,4 +30,4 @@ npm install
 npm run dev
 ```
 
-Other scripts: `npm run build`, `npm test`, `npm run lint`.
+Other scripts: `npm run build`, `npm test`, `npm run test:coverage`, `npm run lint`.
