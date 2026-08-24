@@ -76,6 +76,39 @@ describe("calculateSplit — even mode", () => {
   });
 });
 
+describe("calculateSplit — assign mode edge cases", () => {
+  const people = [person("p1", "A"), person("p2", "B")];
+
+  it("skips an item that has no entry in the assignments map at all", () => {
+    const items = [item("i1", "Unassigned", 1, 500)];
+    const result = calculateSplit({
+      people,
+      items,
+      taxCents: 0,
+      serviceCents: 0,
+      mode: "assign",
+      assignments: {},
+    });
+    expect(result.itemSubtotalCents).toBe(500);
+    expect(sumTotals(result.personTotals)).toBe(result.grandTotalCents);
+  });
+
+  it("falls back the tax/service ratio to 0 when itemSubtotalCents is 0", () => {
+    const items = [item("i1", "Free sample", 1, 0)];
+    const assignments: ItemAssignments = { i1: ["p1"] };
+    const result = calculateSplit({
+      people,
+      items,
+      taxCents: 100,
+      serviceCents: 0,
+      mode: "assign",
+      assignments,
+    });
+    expect(result.itemSubtotalCents).toBe(0);
+    expect(sumTotals(result.personTotals)).toBe(result.grandTotalCents);
+  });
+});
+
 describe("calculateSplit — assign mode", () => {
   const people = [person("p1", "A"), person("p2", "B")];
 
