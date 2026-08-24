@@ -24,6 +24,8 @@ interface ReceiptState {
   addPerson: (name: string) => void;
   removePerson: (id: string) => void;
   renamePerson: (id: string, name: string) => void;
+  setPersonPhone: (id: string, phone: string) => void;
+  setPersonCountry: (id: string, phoneCountry: string) => void;
   addItem: () => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, patch: Partial<Omit<ReceiptItem, "id">>) => void;
@@ -78,6 +80,10 @@ export const useReceiptStore = create<ReceiptState>()(
         })),
       renamePerson: (id, name) =>
         set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, name } : p)) })),
+      setPersonPhone: (id, phone) =>
+        set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, phone } : p)) })),
+      setPersonCountry: (id, phoneCountry) =>
+        set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, phoneCountry } : p)) })),
 
       addItem: () =>
         set((s) => ({

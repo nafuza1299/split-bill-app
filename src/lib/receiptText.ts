@@ -47,6 +47,36 @@ export function formatReceiptText(input: ReceiptTextInput): string {
   return lines.join("\n");
 }
 
+export interface PersonShareTextInput {
+  receiptName: string;
+  dateLabel: string;
+  personName: string;
+  items: { name: string; shareCents: number }[];
+  taxCents: number;
+  serviceCents: number;
+  totalCents: number;
+  currency: string;
+}
+
+export function formatPersonShareText(input: PersonShareTextInput): string {
+  const lines: string[] = [input.receiptName || "Receipt"];
+  if (input.dateLabel) lines.push(input.dateLabel);
+  lines.push("", input.personName);
+
+  for (const item of input.items) {
+    lines.push(`${item.name} — ${formatMoney(item.shareCents, input.currency)}`);
+  }
+
+  lines.push(
+    "",
+    `Tax: ${formatMoney(input.taxCents, input.currency)}`,
+    `Service charge: ${formatMoney(input.serviceCents, input.currency)}`,
+    `Total: ${formatMoney(input.totalCents, input.currency)}`,
+  );
+
+  return lines.join("\n");
+}
+
 export function sanitizeFilename(name: string): string {
   const cleaned = name
     .trim()

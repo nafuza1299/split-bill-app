@@ -19,6 +19,9 @@ export const optionalNameSchema = z
   .string()
   .refine((v) => !WILDCARD_PATTERN.test(v), WILDCARD_MESSAGE);
 
+// Optional — empty is fine, but a non-empty value must contain digits only.
+export const phoneSchema = z.string().refine((v) => /^\d*$/.test(v), "Digits only, no letters or symbols");
+
 // Optional — empty is fine, but a non-empty value must be a real calendar date.
 export const dateSchema = z
   .string()
@@ -46,6 +49,10 @@ export function getWildcardError(value: string): string | null {
 
 export function getDateError(value: string): string | null {
   return firstError(dateSchema.safeParse(value));
+}
+
+export function getPhoneError(phone: string): string | null {
+  return firstError(phoneSchema.safeParse(phone));
 }
 
 export interface ItemFieldErrors {

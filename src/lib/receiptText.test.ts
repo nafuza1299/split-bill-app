@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatReceiptText, sanitizeFilename } from "./receiptText";
+import { formatPersonShareText, formatReceiptText, sanitizeFilename } from "./receiptText";
 import type { ReceiptItem } from "./splitCalculator";
 
 describe("formatReceiptText", () => {
@@ -111,6 +111,64 @@ describe("formatReceiptText", () => {
     expect(text).toContain("Catering × 1 — $1,234,567.89");
     expect(text).toContain("Subtotal: $1,234,567.89");
     expect(text).toContain("Alice — $1,234,567.89");
+  });
+});
+
+describe("formatPersonShareText", () => {
+  it("includes the receipt name, date, and person name", () => {
+    const text = formatPersonShareText({
+      receiptName: "Joe's Diner",
+      dateLabel: "8/23/2026",
+      personName: "Alice",
+      items: [],
+      taxCents: 0,
+      serviceCents: 0,
+      totalCents: 0,
+      currency: "USD",
+    });
+    const lines = text.split("\n");
+    expect(lines[0]).toBe("Joe's Diner");
+    expect(lines[1]).toBe("8/23/2026");
+    expect(lines[3]).toBe("Alice");
+  });
+
+  it("falls back to 'Receipt' and omits the date line when empty", () => {
+    const text = formatPersonShareText({
+      receiptName: "",
+      dateLabel: "",
+      personName: "Alice",
+      items: [],
+      taxCents: 0,
+      serviceCents: 0,
+      totalCents: 0,
+      currency: "USD",
+    });
+    const lines = text.split("\n");
+    expect(lines[0]).toBe("Receipt");
+    expect(lines[1]).toBe("");
+    expect(lines[2]).toBe("Alice");
+  });
+
+  it("lists only this person's items and totals", () => {
+    const text = formatPersonShareText({
+      receiptName: "Receipt",
+      dateLabel: "",
+      personName: "Alice",
+      items: [
+        { name: "Pizza", shareCents: 1000 },
+        { name: "Coffee", shareCents: 500 },
+      ],
+      taxCents: 100,
+      serviceCents: 50,
+      totalCents: 1650,
+      currency: "USD",
+    });
+    expect(text).toContain("Pizza — $10.00");
+    expect(text).toContain("Coffee — $5.00");
+    expect(text).toContain("Tax: $1.00");
+    expect(text).toContain("Service charge: $0.50");
+    expect(text).toContain("Total: $16.50");
+    expect(text).not.toContain("Bob");
   });
 });
 
