@@ -2,6 +2,7 @@ import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
 import { MoneyInput } from "./ui/MoneyInput";
+import { ReceiptOcrUpload } from "./ReceiptOcrUpload";
 import { useReceiptStore } from "../store/useReceiptStore";
 import { DUPLICATE_NAME_MESSAGE, getDuplicateNameIndices, getMoneyError, getNameError, getQuantityError } from "../lib/validation";
 
@@ -24,6 +25,7 @@ export function ReceiptItemsEditor() {
       </Card.Header>
       <Card.Body>
         <div className="space-y-3">
+          <ReceiptOcrUpload />
           {items.length > 0 && (
             <div className="grid grid-cols-12 gap-2 text-sm text-text-muted">
               <span className="col-span-6">Item name</span>
