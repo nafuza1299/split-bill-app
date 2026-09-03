@@ -37,6 +37,7 @@ describe("currencies", () => {
       expect(currencies.length).toBeGreaterThan(0);
       expect(currencies.every((c) => c.name === c.code)).toBe(true);
     } finally {
+      // @ts-expect-error -- restoring the stubbed global
       Intl.DisplayNames = original;
     }
   });
