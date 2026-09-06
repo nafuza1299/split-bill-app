@@ -146,6 +146,22 @@ describe("useReceiptStore actions", () => {
     expect(people.find((p) => p.id === "p2")?.phoneCountry).toBeUndefined();
   });
 
+  it("appends OCR-parsed items with fresh ids without touching existing items", () => {
+    useReceiptStore.setState({
+      items: [{ id: "i1", name: "Existing", quantity: 1, unitPriceCents: 100 }],
+    });
+    useReceiptStore.getState().addItemsFromOcr([
+      { name: "Coffee", quantity: 1, unitPriceCents: 450 },
+      { name: "Bagel", quantity: 2, unitPriceCents: 325 },
+    ]);
+    const items = useReceiptStore.getState().items;
+    expect(items).toHaveLength(3);
+    expect(items[0]).toEqual({ id: "i1", name: "Existing", quantity: 1, unitPriceCents: 100 });
+    expect(items[1]).toMatchObject({ name: "Coffee", quantity: 1, unitPriceCents: 450 });
+    expect(items[2]).toMatchObject({ name: "Bagel", quantity: 2, unitPriceCents: 325 });
+    expect(items[1].id).not.toBe(items[2].id);
+  });
+
   it("cleans up assignments referencing a removed person", () => {
     useReceiptStore.setState({
       people: [{ id: "p1", name: "Alice" }],

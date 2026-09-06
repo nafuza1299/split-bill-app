@@ -27,6 +27,7 @@ interface ReceiptState {
   setPersonPhone: (id: string, phone: string) => void;
   setPersonCountry: (id: string, phoneCountry: string) => void;
   addItem: () => void;
+  addItemsFromOcr: (items: Omit<ReceiptItem, "id">[]) => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, patch: Partial<Omit<ReceiptItem, "id">>) => void;
   setTax: (cents: number) => void;
@@ -88,6 +89,10 @@ export const useReceiptStore = create<ReceiptState>()(
       addItem: () =>
         set((s) => ({
           items: [...s.items, { id: crypto.randomUUID(), name: "", quantity: 1, unitPriceCents: 0 }],
+        })),
+      addItemsFromOcr: (items) =>
+        set((s) => ({
+          items: [...s.items, ...items.map((item) => ({ id: crypto.randomUUID(), ...item }))],
         })),
       removeItem: (id) =>
         set((s) => {
