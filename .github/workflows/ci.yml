@@ -21,3 +21,4 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm run build
+      - run: npx -y @lhci/cli@0.15.x autorun
