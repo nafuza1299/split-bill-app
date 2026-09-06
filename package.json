@@ -3,6 +3,25 @@
   "private": true,
   "version": "1.1.0",
   "type": "module",
+  "description": "A wizard for splitting a shared bill fairly — evenly or item by item — with exact-cent rounding, no backend and no accounts.",
+  "author": "nafuza1299",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nafuza1299/split-bill-app.git"
+  },
+  "homepage": "https://split-ur-bill.vercel.app/",
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "vite",
+    "zustand",
+    "bill-splitting",
+    "receipt"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
