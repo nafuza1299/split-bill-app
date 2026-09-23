@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countryCodes, flagEmoji } from "./countryCodes";
+import { countriesByName, countryCodes, flagEmoji } from "./countryCodes";
 
 describe("flagEmoji", () => {
   it("builds the regional-indicator flag for a country code", () => {
@@ -40,5 +40,13 @@ describe("countryCodes", () => {
     for (let i = 1; i < dialCodeNumbers.length; i++) {
       expect(dialCodeNumbers[i]).toBeGreaterThanOrEqual(dialCodeNumbers[i - 1]);
     }
+  });
+});
+
+describe("countriesByName", () => {
+  it("has the same entries as countryCodes, sorted alphabetically by name", () => {
+    expect(new Set(countriesByName.map((c) => c.iso2))).toEqual(new Set(countryCodes.map((c) => c.iso2)));
+    const names = countriesByName.map((c) => c.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
 });

@@ -45,6 +45,7 @@ interface ReceiptState {
   prevStep: () => void;
   goToStep: (step: WizardStep) => void;
   applyDetectedRegion: (region: string) => void;
+  setCountry: (region: string) => void;
   resetAll: () => void;
 }
 
@@ -156,6 +157,8 @@ export const useReceiptStore = create<ReceiptState>()(
           detectedRegion: region,
           currency: s.currencyAutoDetected ? currencyForRegion(region) : s.currency,
         })),
+      setCountry: (region) =>
+        set({ detectedRegion: region, currency: currencyForRegion(region), currencyAutoDetected: false }),
       resetAll: () => set(initialData),
     }),
     { name: "split-bill-receipt", storage: createExpiringStorage(ONE_DAY_MS) },

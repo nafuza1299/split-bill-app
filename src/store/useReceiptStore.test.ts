@@ -251,4 +251,24 @@ describe("useReceiptStore actions", () => {
     useReceiptStore.getState().resetAll();
     expect(useReceiptStore.getState().currencyAutoDetected).toBe(true);
   });
+
+  it("setCountry sets the region and its currency, and marks currency as manually chosen", () => {
+    useReceiptStore.setState({ currency: "USD", currencyAutoDetected: true });
+    useReceiptStore.getState().setCountry("JP");
+    expect(useReceiptStore.getState().detectedRegion).toBe("JP");
+    expect(useReceiptStore.getState().currency).toBe("JPY");
+    expect(useReceiptStore.getState().currencyAutoDetected).toBe(false);
+  });
+
+  it("setCountry overrides a previously manually-chosen currency", () => {
+    useReceiptStore.setState({ currency: "EUR", currencyAutoDetected: false });
+    useReceiptStore.getState().setCountry("ID");
+    expect(useReceiptStore.getState().currency).toBe("IDR");
+  });
+
+  it("setCountry falls back to USD for an unmapped region", () => {
+    useReceiptStore.getState().setCountry("AQ");
+    expect(useReceiptStore.getState().detectedRegion).toBe("AQ");
+    expect(useReceiptStore.getState().currency).toBe("USD");
+  });
 });

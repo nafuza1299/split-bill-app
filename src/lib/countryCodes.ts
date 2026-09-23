@@ -177,3 +177,8 @@ const rawCountryCodes: CountryDialCode[] = [
 export const countryCodes: CountryDialCode[] = [...rawCountryCodes].sort(
   (a, b) => Number(a.dialCode.slice(1)) - Number(b.dialCode.slice(1)),
 );
+
+// For a country picker, where people scan by name rather than dial code.
+export const countriesByName: CountryDialCode[] = [...rawCountryCodes].sort((a, b) =>
+  a.name.localeCompare(b.name),
+);

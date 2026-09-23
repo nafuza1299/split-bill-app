@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
-import { countryCodes, flagEmoji } from "../lib/countryCodes";
+import { countriesByName, countryCodes, flagEmoji } from "../lib/countryCodes";
 import { currencies } from "../lib/currencies";
 import { useReceiptStore } from "../store/useReceiptStore";
 import {
@@ -23,6 +23,7 @@ export function PeopleManager() {
   const setReceiptName = useReceiptStore((s) => s.setReceiptName);
   const setReceiptDate = useReceiptStore((s) => s.setReceiptDate);
   const setCurrency = useReceiptStore((s) => s.setCurrency);
+  const setCountry = useReceiptStore((s) => s.setCountry);
   const people = useReceiptStore((s) => s.people);
   const addPerson = useReceiptStore((s) => s.addPerson);
   const removePerson = useReceiptStore((s) => s.removePerson);
@@ -63,6 +64,23 @@ export function PeopleManager() {
             error={getDateError(receiptDate)}
             onChange={(e) => setReceiptDate(e.target.value)}
           />
+          <div>
+            <label htmlFor="receipt-country" className="mb-1 block text-sm text-text-muted">
+              Country
+            </label>
+            <select
+              id="receipt-country"
+              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              value={detectedRegion}
+              onChange={(e) => setCountry(e.target.value)}
+            >
+              {countriesByName.map((c) => (
+                <option key={c.iso2} value={c.iso2}>
+                  {flagEmoji(c.iso2)} {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label htmlFor="receipt-currency" className="mb-1 block text-sm text-text-muted">
               Currency

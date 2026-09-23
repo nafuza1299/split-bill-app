@@ -142,4 +142,20 @@ describe("PeopleManager", () => {
     expect(useReceiptStore.getState().receiptName).toBe("Joe's Diner");
     expect(useReceiptStore.getState().receiptDate).toBe("2026-08-23");
   });
+
+  it("picking a country updates the region and its currency", () => {
+    render(<PeopleManager />);
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "JP" } });
+    expect(useReceiptStore.getState().detectedRegion).toBe("JP");
+    expect(useReceiptStore.getState().currency).toBe("JPY");
+    expect(screen.getByLabelText("Currency")).toHaveValue("JPY");
+  });
+
+  it("a new person's phone country falls back to the picked country", () => {
+    render(<PeopleManager />);
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "JP" } });
+    fireEvent.change(screen.getByLabelText("New person name"), { target: { value: "Alice" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(screen.getByLabelText("Alice phone country")).toHaveValue("JP");
+  });
 });
