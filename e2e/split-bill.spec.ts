@@ -97,7 +97,7 @@ test('walks the whole wizard from an empty receipt to the summary', async ({ pag
   await next(page).click()
 
   // 2 x $10.00 + $10.00 = $30.00, plus $2.50 tax and $1.00 service, halved.
-  await expect(page.getByText('Summary')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible()
   await expect(personRow(page, 'Alice').getByText('$16.75')).toBeVisible()
   await expect(personRow(page, 'Bob').getByText('$16.75')).toBeVisible()
   // The summary's Card.Footer is the page's only <footer>; the receipt card
@@ -180,7 +180,7 @@ test('Clear all wipes the receipt only after the confirm is accepted', async ({ 
 test('exports the summary as a PNG named after the receipt', async ({ page }) => {
   await seedReceipt(page, { step: 'summary', splitMode: 'even' })
   await page.goto('/')
-  await expect(page.getByText('Summary')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible()
 
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export as PNG' }).click()
@@ -190,7 +190,7 @@ test('exports the summary as a PNG named after the receipt', async ({ page }) =>
 test('exports the summary as a PDF named after the receipt', async ({ page }) => {
   await seedReceipt(page, { step: 'summary', splitMode: 'even' })
   await page.goto('/')
-  await expect(page.getByText('Summary')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible()
 
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export as PDF' }).click()
@@ -223,7 +223,7 @@ test("WhatsApp share opens wa.me with the person's number and their share", asyn
 test('the summary has no detectable WCAG A/AA violations', async ({ page }) => {
   await seedReceipt(page, { step: 'summary', splitMode: 'even' })
   await page.goto('/')
-  await expect(page.getByText('Summary')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible()
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
