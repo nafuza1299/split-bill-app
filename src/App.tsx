@@ -5,6 +5,7 @@ import { PeopleManager } from "./components/PeopleManager";
 import { ReceiptItemsEditor } from "./components/ReceiptItemsEditor";
 import { SplitModeChooser } from "./components/SplitModeChooser";
 import { SplitSummary } from "./components/SplitSummary";
+import { StepBar } from "./components/StepBar";
 import { canAdvance, getAdvanceBlockedReason, useReceiptStore } from "./store/useReceiptStore";
 
 const stepComponents = {
@@ -26,7 +27,7 @@ export default function App() {
   };
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 pt-10 pb-24">
       <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
 
       <StepComponent />
@@ -57,6 +58,8 @@ export default function App() {
           );
         })()}
       </div>
+
+      <StepBar />
     </div>
   );
 }

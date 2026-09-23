@@ -192,4 +192,37 @@ describe("useReceiptStore actions", () => {
     useReceiptStore.getState().prevStep();
     expect(useReceiptStore.getState().step).toBe("mode");
   });
+
+  it("nextStep/prevStep record the newly-entered step as visited", () => {
+    useReceiptStore.setState({ step: "people", visitedSteps: ["people"] });
+    useReceiptStore.getState().nextStep();
+    expect(useReceiptStore.getState().visitedSteps).toEqual(["people", "items"]);
+
+    useReceiptStore.setState({ step: "mode", splitMode: "assign", visitedSteps: ["people", "items", "mode"] });
+    useReceiptStore.getState().nextStep();
+    expect(useReceiptStore.getState().visitedSteps).toEqual(["people", "items", "mode", "assign"]);
+
+    useReceiptStore.setState({ step: "people", visitedSteps: ["people"] });
+    useReceiptStore.getState().prevStep();
+    expect(useReceiptStore.getState().visitedSteps).toEqual(["people"]);
+  });
+
+  it("goToStep jumps directly and records the target as visited", () => {
+    useReceiptStore.setState({ step: "people", visitedSteps: ["people"] });
+    useReceiptStore.getState().goToStep("summary");
+    expect(useReceiptStore.getState().step).toBe("summary");
+    expect(useReceiptStore.getState().visitedSteps).toEqual(["people", "summary"]);
+  });
+
+  it("goToStep does not duplicate an already-visited step", () => {
+    useReceiptStore.setState({ step: "people", visitedSteps: ["people", "items"] });
+    useReceiptStore.getState().goToStep("items");
+    expect(useReceiptStore.getState().visitedSteps).toEqual(["people", "items"]);
+  });
+
+  it("resetAll resets visitedSteps to just the first step", () => {
+    useReceiptStore.setState({ visitedSteps: ["people", "items", "mode", "summary"] });
+    useReceiptStore.getState().resetAll();
+    expect(useReceiptStore.getState().visitedSteps).toEqual(["people"]);
+  });
 });

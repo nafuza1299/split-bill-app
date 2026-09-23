@@ -18,6 +18,7 @@ interface ReceiptState {
   currency: string;
   splitMode: SplitMode | null;
   assignments: ItemAssignments;
+  visitedSteps: WizardStep[];
 
   setReceiptName: (name: string) => void;
   setReceiptDate: (date: string) => void;
@@ -36,6 +37,7 @@ interface ReceiptState {
   toggleAssignment: (itemId: string, personId: string) => void;
   nextStep: () => void;
   prevStep: () => void;
+  goToStep: (step: WizardStep) => void;
   resetAll: () => void;
 }
 
@@ -50,6 +52,7 @@ const initialData = {
   currency: "USD",
   splitMode: null as SplitMode | null,
   assignments: {} as ItemAssignments,
+  visitedSteps: ["people"] as WizardStep[],
 };
 
 const stepOrder: WizardStep[] = ["people", "items", "mode", "summary"];
@@ -57,6 +60,10 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 function nextAfterMode(mode: SplitMode | null): WizardStep {
   return mode === "assign" ? "assign" : "summary";
+}
+
+function markVisited(visited: WizardStep[], step: WizardStep): WizardStep[] {
+  return visited.includes(step) ? visited : [...visited, step];
 }
 
 export const useReceiptStore = create<ReceiptState>()(
@@ -113,18 +120,28 @@ export const useReceiptStore = create<ReceiptState>()(
 
       nextStep: () =>
         set((s) => {
-          if (s.step === "mode") return { step: nextAfterMode(s.splitMode) };
-          if (s.step === "assign") return { step: "summary" };
-          const i = stepOrder.indexOf(s.step);
-          return { step: stepOrder[Math.min(i + 1, stepOrder.length - 1)] };
+          let target: WizardStep;
+          if (s.step === "mode") target = nextAfterMode(s.splitMode);
+          else if (s.step === "assign") target = "summary";
+          else {
+            const i = stepOrder.indexOf(s.step);
+            target = stepOrder[Math.min(i + 1, stepOrder.length - 1)];
+          }
+          return { step: target, visitedSteps: markVisited(s.visitedSteps, target) };
         }),
       prevStep: () =>
         set((s) => {
-          if (s.step === "summary") return { step: nextAfterMode(s.splitMode) === "assign" ? "assign" : "mode" };
-          if (s.step === "assign") return { step: "mode" };
-          const i = stepOrder.indexOf(s.step);
-          return { step: stepOrder[Math.max(i - 1, 0)] };
+          let target: WizardStep;
+          if (s.step === "summary") target = nextAfterMode(s.splitMode) === "assign" ? "assign" : "mode";
+          else if (s.step === "assign") target = "mode";
+          else {
+            const i = stepOrder.indexOf(s.step);
+            target = stepOrder[Math.max(i - 1, 0)];
+          }
+          return { step: target, visitedSteps: markVisited(s.visitedSteps, target) };
         }),
+      goToStep: (step) =>
+        set((s) => ({ step, visitedSteps: markVisited(s.visitedSteps, step) })),
       resetAll: () => set(initialData),
     }),
     { name: "split-bill-receipt", storage: createExpiringStorage(ONE_DAY_MS) },

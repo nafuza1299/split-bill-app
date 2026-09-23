@@ -31,3 +31,6 @@ playwright-report
 
 # Lighthouse CI
 .lighthouseci
+
+# graphify
+graphify-out
