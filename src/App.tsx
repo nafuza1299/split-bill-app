@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "./components/catalyst/Button/Button";
 import { Tooltip } from "./components/catalyst/Tooltip/Tooltip";
 import { ItemAssignmentGrid } from "./components/ItemAssignmentGrid";
@@ -6,6 +7,7 @@ import { ReceiptItemsEditor } from "./components/ReceiptItemsEditor";
 import { SplitModeChooser } from "./components/SplitModeChooser";
 import { SplitSummary } from "./components/SplitSummary";
 import { StepBar } from "./components/StepBar";
+import { detectRegionByIp } from "./lib/geoip";
 import { canAdvance, getAdvanceBlockedReason, useReceiptStore } from "./store/useReceiptStore";
 
 const stepComponents = {
@@ -25,6 +27,17 @@ export default function App() {
   const clearAll = () => {
     if (confirm("Clear everything you've entered?")) state.resetAll();
   };
+
+  const applyDetectedRegion = state.applyDetectedRegion;
+  useEffect(() => {
+    let cancelled = false;
+    detectRegionByIp().then((region) => {
+      if (region && !cancelled) applyDetectedRegion(region);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [applyDetectedRegion]);
 
   return (
     <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 pt-10 pb-24">

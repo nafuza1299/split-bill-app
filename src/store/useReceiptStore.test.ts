@@ -225,4 +225,30 @@ describe("useReceiptStore actions", () => {
     useReceiptStore.getState().resetAll();
     expect(useReceiptStore.getState().visitedSteps).toEqual(["people"]);
   });
+
+  it("applyDetectedRegion updates the region and currency while still auto-detected", () => {
+    useReceiptStore.setState({ currencyAutoDetected: true });
+    useReceiptStore.getState().applyDetectedRegion("ID");
+    expect(useReceiptStore.getState().detectedRegion).toBe("ID");
+    expect(useReceiptStore.getState().currency).toBe("IDR");
+  });
+
+  it("applyDetectedRegion updates the region but leaves a manually-chosen currency alone", () => {
+    useReceiptStore.setState({ currency: "JPY", currencyAutoDetected: false });
+    useReceiptStore.getState().applyDetectedRegion("ID");
+    expect(useReceiptStore.getState().detectedRegion).toBe("ID");
+    expect(useReceiptStore.getState().currency).toBe("JPY");
+  });
+
+  it("setCurrency marks the currency as no longer auto-detected", () => {
+    useReceiptStore.setState({ currencyAutoDetected: true });
+    useReceiptStore.getState().setCurrency("EUR");
+    expect(useReceiptStore.getState().currencyAutoDetected).toBe(false);
+  });
+
+  it("resetAll restores currencyAutoDetected", () => {
+    useReceiptStore.setState({ currencyAutoDetected: false });
+    useReceiptStore.getState().resetAll();
+    expect(useReceiptStore.getState().currencyAutoDetected).toBe(true);
+  });
 });

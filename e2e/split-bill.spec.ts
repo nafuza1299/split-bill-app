@@ -4,6 +4,14 @@ import AxeBuilder from '@axe-core/playwright'
 // Nothing in this app talks to a server, so there is no API to stub — but the
 // WhatsApp share opens wa.me for real, and the e2e run must never leave the
 // machine. That one URL is fulfilled locally in the test that triggers it.
+//
+// App also fires a best-effort geoip lookup (src/lib/geoip.ts) on mount to
+// refine the currency/phone-country default. Block it here so every test
+// exercises the same offline fallback path instead of depending on a real
+// third-party call and its uptime/rate limits.
+test.beforeEach(async ({ page }) => {
+  await page.route('https://ipapi.co/**', (route) => route.abort())
+})
 
 const RECEIPT_NAME = "Joe's Diner"
 const RECEIPT_DATE = '2026-08-23'

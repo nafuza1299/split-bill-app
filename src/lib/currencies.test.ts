@@ -43,6 +43,18 @@ describe("currencies", () => {
   });
 });
 
+describe("currencyForRegion", () => {
+  it("maps a mapped region directly", async () => {
+    const { currencyForRegion } = await import("./currencies");
+    expect(currencyForRegion("ID")).toBe("IDR");
+  });
+
+  it("falls back to USD for an unmapped region", async () => {
+    const { currencyForRegion } = await import("./currencies");
+    expect(currencyForRegion("AQ")).toBe("USD");
+  });
+});
+
 describe("defaultCurrency", () => {
   afterEach(() => {
     vi.resetModules();

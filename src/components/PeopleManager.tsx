@@ -4,7 +4,6 @@ import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
 import { countryCodes, flagEmoji } from "../lib/countryCodes";
 import { currencies } from "../lib/currencies";
-import { detectRegion } from "../lib/locale";
 import { useReceiptStore } from "../store/useReceiptStore";
 import {
   DUPLICATE_NAME_MESSAGE,
@@ -16,12 +15,11 @@ import {
   isNameTaken,
 } from "../lib/validation";
 
-const DEFAULT_PHONE_COUNTRY = detectRegion();
-
 export function PeopleManager() {
   const receiptName = useReceiptStore((s) => s.receiptName);
   const receiptDate = useReceiptStore((s) => s.receiptDate);
   const currency = useReceiptStore((s) => s.currency);
+  const detectedRegion = useReceiptStore((s) => s.detectedRegion);
   const setReceiptName = useReceiptStore((s) => s.setReceiptName);
   const setReceiptDate = useReceiptStore((s) => s.setReceiptDate);
   const setCurrency = useReceiptStore((s) => s.setCurrency);
@@ -105,7 +103,7 @@ export function PeopleManager() {
                 <select
                   id={`phone-country-${person.id}`}
                   className="h-10 w-full rounded-md border border-border bg-surface px-2 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                  value={person.phoneCountry ?? DEFAULT_PHONE_COUNTRY}
+                  value={person.phoneCountry ?? detectedRegion}
                   onChange={(e) => setPersonCountry(person.id, e.target.value)}
                 >
                   {countryCodes.map((c) => (

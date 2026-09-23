@@ -73,7 +73,12 @@ const REGION_CURRENCY: Record<string, string> = {
   HR: "EUR",
 };
 
+/** Currency for a given ISO 3166-1 region; falls back to USD when unmapped. */
+export function currencyForRegion(region: string): string {
+  return REGION_CURRENCY[region] ?? "USD";
+}
+
 /** Best-guess currency for the current browser's locale; falls back to USD. */
 export function defaultCurrency(): string {
-  return REGION_CURRENCY[detectRegion()] ?? "USD";
+  return currencyForRegion(detectRegion());
 }

@@ -4,7 +4,8 @@ import { calculateSplit } from "../lib/splitCalculator";
 import type { ItemAssignments, Person, ReceiptItem, SplitMode, SplitResult } from "../lib/splitCalculator";
 import { getDuplicateNameIndices, getMoneyError, getNameError, isItemValid } from "../lib/validation";
 import { createExpiringStorage } from "../lib/cache";
-import { defaultCurrency } from "../lib/currencies";
+import { currencyForRegion, defaultCurrency } from "../lib/currencies";
+import { detectRegion } from "../lib/locale";
 
 export type WizardStep = "people" | "items" | "mode" | "assign" | "summary";
 
@@ -20,6 +21,10 @@ interface ReceiptState {
   splitMode: SplitMode | null;
   assignments: ItemAssignments;
   visitedSteps: WizardStep[];
+  /** Best-guess ISO 3166-1 region, refined once an IP lookup resolves. Also the phone-country fallback for new people. */
+  detectedRegion: string;
+  /** False once the user has manually picked a currency - keeps a later IP lookup from overwriting their choice. */
+  currencyAutoDetected: boolean;
 
   setReceiptName: (name: string) => void;
   setReceiptDate: (date: string) => void;
@@ -39,6 +44,7 @@ interface ReceiptState {
   nextStep: () => void;
   prevStep: () => void;
   goToStep: (step: WizardStep) => void;
+  applyDetectedRegion: (region: string) => void;
   resetAll: () => void;
 }
 
@@ -54,6 +60,8 @@ const initialData = {
   splitMode: null as SplitMode | null,
   assignments: {} as ItemAssignments,
   visitedSteps: ["people"] as WizardStep[],
+  detectedRegion: detectRegion(),
+  currencyAutoDetected: true,
 };
 
 const stepOrder: WizardStep[] = ["people", "items", "mode", "summary"];
@@ -107,7 +115,7 @@ export const useReceiptStore = create<ReceiptState>()(
 
       setTax: (cents) => set({ taxCents: cents }),
       setService: (cents) => set({ serviceCents: cents }),
-      setCurrency: (currency) => set({ currency }),
+      setCurrency: (currency) => set({ currency, currencyAutoDetected: false }),
       setSplitMode: (mode) => set({ splitMode: mode }),
 
       toggleAssignment: (itemId, personId) =>
@@ -143,6 +151,11 @@ export const useReceiptStore = create<ReceiptState>()(
         }),
       goToStep: (step) =>
         set((s) => ({ step, visitedSteps: markVisited(s.visitedSteps, step) })),
+      applyDetectedRegion: (region) =>
+        set((s) => ({
+          detectedRegion: region,
+          currency: s.currencyAutoDetected ? currencyForRegion(region) : s.currency,
+        })),
       resetAll: () => set(initialData),
     }),
     { name: "split-bill-receipt", storage: createExpiringStorage(ONE_DAY_MS) },
