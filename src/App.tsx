@@ -28,19 +28,21 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 pt-10 pb-24">
-      <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
+        <Button variant="destructive" size="sm" onClick={clearAll}>
+          Clear all
+        </Button>
+      </div>
 
       <StepComponent />
 
       <div className="flex items-center justify-between">
-        {!isFirstStep && (
+        {isFirstStep ? (
+          <div />
+        ) : (
           <Button variant="ghost" onClick={state.prevStep}>
             Back
-          </Button>
-        )}
-        {isFirstStep && (
-          <Button variant="destructive" onClick={clearAll}>
-            Clear all
           </Button>
         )}
         {!isLastStep && (() => {
