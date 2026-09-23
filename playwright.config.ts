@@ -20,6 +20,10 @@ export default defineConfig({
     // The summary's copy buttons go through navigator.clipboard, which
     // Chromium refuses without an explicit grant.
     permissions: ['clipboard-read', 'clipboard-write'],
+    // Currency/phone-country defaults are derived from the browser locale
+    // (src/lib/locale.ts) - pin it so those assertions don't depend on the
+    // host or CI runner's own locale.
+    locale: 'en-US',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

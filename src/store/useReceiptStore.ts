@@ -4,6 +4,7 @@ import { calculateSplit } from "../lib/splitCalculator";
 import type { ItemAssignments, Person, ReceiptItem, SplitMode, SplitResult } from "../lib/splitCalculator";
 import { getDuplicateNameIndices, getMoneyError, getNameError, isItemValid } from "../lib/validation";
 import { createExpiringStorage } from "../lib/cache";
+import { defaultCurrency } from "../lib/currencies";
 
 export type WizardStep = "people" | "items" | "mode" | "assign" | "summary";
 
@@ -49,7 +50,7 @@ const initialData = {
   items: [] as ReceiptItem[],
   taxCents: 0,
   serviceCents: 0,
-  currency: "USD",
+  currency: defaultCurrency(),
   splitMode: null as SplitMode | null,
   assignments: {} as ItemAssignments,
   visitedSteps: ["people"] as WizardStep[],

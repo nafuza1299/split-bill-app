@@ -4,6 +4,7 @@ import { Card } from "./catalyst/Card/Card";
 import { Input } from "./ui/Input";
 import { countryCodes, flagEmoji } from "../lib/countryCodes";
 import { currencies } from "../lib/currencies";
+import { detectRegion } from "../lib/locale";
 import { useReceiptStore } from "../store/useReceiptStore";
 import {
   DUPLICATE_NAME_MESSAGE,
@@ -15,14 +16,7 @@ import {
   isNameTaken,
 } from "../lib/validation";
 
-function defaultPhoneCountry(): string {
-  try {
-    return new Intl.Locale(navigator.language).maximize().region ?? "US";
-  } catch {
-    return "US";
-  }
-}
-const DEFAULT_PHONE_COUNTRY = defaultPhoneCountry();
+const DEFAULT_PHONE_COUNTRY = detectRegion();
 
 export function PeopleManager() {
   const receiptName = useReceiptStore((s) => s.receiptName);

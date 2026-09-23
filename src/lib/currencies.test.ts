@@ -42,3 +42,28 @@ describe("currencies", () => {
     }
   });
 });
+
+describe("defaultCurrency", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllGlobals();
+  });
+
+  it("maps a mapped region to its currency", async () => {
+    vi.stubGlobal("navigator", { language: "id-ID" });
+    const { defaultCurrency } = await import("./currencies");
+    expect(defaultCurrency()).toBe("IDR");
+  });
+
+  it("maps every Eurozone region to EUR", async () => {
+    vi.stubGlobal("navigator", { language: "de-DE" });
+    const { defaultCurrency } = await import("./currencies");
+    expect(defaultCurrency()).toBe("EUR");
+  });
+
+  it("falls back to USD for an unmapped region", async () => {
+    vi.stubGlobal("navigator", { language: "en-AQ" });
+    const { defaultCurrency } = await import("./currencies");
+    expect(defaultCurrency()).toBe("USD");
+  });
+});
