@@ -49,10 +49,19 @@ export interface ReceiptState {
   resetAll: () => void;
 }
 
+// Local date in the <input type="date"> value format (YYYY-MM-DD) — avoids the UTC-shift
+// that toISOString() would introduce for users west of UTC near midnight.
+function todayDateString(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 const initialData = {
   step: "people" as WizardStep,
   receiptName: "",
-  receiptDate: "",
+  receiptDate: todayDateString(),
   people: [] as Person[],
   items: [] as ReceiptItem[],
   taxCents: 0,
@@ -159,7 +168,7 @@ export const useReceiptStore = create<ReceiptState>()(
         })),
       setCountry: (region) =>
         set({ detectedRegion: region, currency: currencyForRegion(region), currencyAutoDetected: false }),
-      resetAll: () => set(initialData),
+      resetAll: () => set({ ...initialData, receiptDate: todayDateString() }),
     }),
     { name: "split-bill-receipt", storage: createExpiringStorage(ONE_DAY_MS) },
   ),

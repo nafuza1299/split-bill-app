@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { parseDollarsToCents } from "./money";
 import {
   calculateSplit,
+  itemsForPerson,
   itemTotalCents,
   personItemShareCents,
+  splitAmongCount,
   type ItemAssignments,
   type Person,
   type ReceiptItem,
@@ -191,5 +193,36 @@ describe("personItemShareCents", () => {
   it("matches itemTotalCents when split among one person", () => {
     const snacks = item("i3", "Snacks", 3, 333);
     expect(personItemShareCents(snacks, 1)).toBe(itemTotalCents(snacks));
+  });
+});
+
+describe("itemsForPerson", () => {
+  const items = [item("i1", "Pizza", 1, 2000), item("i2", "Coffee", 1, 500)];
+
+  it("returns every item in even mode, regardless of assignments", () => {
+    expect(itemsForPerson("p1", items, "even", {})).toEqual(items);
+  });
+
+  it("returns only the assigned items in assign mode", () => {
+    const assignments: ItemAssignments = { i1: ["p1"], i2: ["p2"] };
+    expect(itemsForPerson("p1", items, "assign", assignments)).toEqual([items[0]]);
+  });
+
+  it("returns no items in assign mode when nothing is assigned to them", () => {
+    expect(itemsForPerson("p1", items, "assign", {})).toEqual([]);
+  });
+});
+
+describe("splitAmongCount", () => {
+  it("returns the full people count in even mode", () => {
+    expect(splitAmongCount("i1", 3, "even", {})).toBe(3);
+  });
+
+  it("returns the number of assignees in assign mode", () => {
+    expect(splitAmongCount("i1", 3, "assign", { i1: ["p1", "p2"] })).toBe(2);
+  });
+
+  it("returns 0 in assign mode when unassigned", () => {
+    expect(splitAmongCount("i1", 3, "assign", {})).toBe(0);
   });
 });

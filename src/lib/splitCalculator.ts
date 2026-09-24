@@ -44,6 +44,26 @@ export function personItemShareCents(item: ReceiptItem, splitAmong: number): num
   return splitAmong > 0 ? itemTotalCents(item) / splitAmong : 0;
 }
 
+/** Items billed to a person: everything in "even" mode, only their assigned items in "assign" mode. */
+export function itemsForPerson(
+  personId: string,
+  items: ReceiptItem[],
+  mode: SplitMode | null,
+  assignments: ItemAssignments,
+): ReceiptItem[] {
+  return mode === "assign" ? items.filter((item) => (assignments[item.id] ?? []).includes(personId)) : items;
+}
+
+/** How many people an item's cost is divided among. */
+export function splitAmongCount(
+  itemId: string,
+  peopleCount: number,
+  mode: SplitMode | null,
+  assignments: ItemAssignments,
+): number {
+  return mode === "assign" ? (assignments[itemId] ?? []).length : peopleCount;
+}
+
 export function calculateSplit(input: SplitInput): SplitResult {
   const { people, items, taxCents, serviceCents, mode, assignments } = input;
   const itemSubtotalCents = items.reduce((sum, item) => sum + itemTotalCents(item), 0);

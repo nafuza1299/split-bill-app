@@ -1,29 +1,22 @@
-import {
-  autoUpdate,
-  flip,
-  FloatingFocusManager,
-  FloatingPortal,
-  offset,
-  useClick,
-  useDismiss,
-  useFloating,
-  useInteractions,
-  useListNavigation,
-  useRole,
-} from "@floating-ui/react";
 import { useRef, useState } from "react";
 import ExcelJS from "exceljs";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
+import { DownloadMenu, ExcelIcon, PdfIcon, PngIcon } from "./catalyst/DownloadMenu/DownloadMenu";
 import { Tooltip } from "./catalyst/Tooltip/Tooltip";
 import { ReceiptCard } from "./ReceiptCard";
 import { countryCodes } from "../lib/countryCodes";
 import { formatMoney } from "../lib/money";
 import { buildReceiptRows, formatPersonShareText, formatReceiptText, sanitizeFilename } from "../lib/receiptText";
 import { useReceiptStore, useSplitResult } from "../store/useReceiptStore";
-import { personItemShareCents, type Person, type ReceiptItem } from "../lib/splitCalculator";
+import {
+  itemsForPerson as sharedItemsForPerson,
+  personItemShareCents,
+  splitAmongCount as sharedSplitAmongCount,
+  type Person,
+} from "../lib/splitCalculator";
 
 export function shouldIncludeInExport(node: Node): boolean {
   return !(node instanceof HTMLElement && node.dataset.exportHide !== undefined);
@@ -49,13 +42,9 @@ export function SplitSummary() {
   const [copiedPersonId, setCopiedPersonId] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const itemsForPerson = (personId: string): ReceiptItem[] =>
-    splitMode === "assign"
-      ? items.filter((item) => (assignments[item.id] ?? []).includes(personId))
-      : items;
+  const itemsForPerson = (personId: string) => sharedItemsForPerson(personId, items, splitMode, assignments);
 
-  const splitAmongCount = (itemId: string): number =>
-    splitMode === "assign" ? (assignments[itemId] ?? []).length : people.length;
+  const splitAmongCount = (itemId: string) => sharedSplitAmongCount(itemId, people.length, splitMode, assignments);
 
   const buildTextInput = () => ({
     receiptName,
@@ -187,7 +176,13 @@ export function SplitSummary() {
               <Button variant="secondary" size="sm" onClick={handleCopy}>
                 {copied ? "Copied!" : "Copy to clipboard"}
               </Button>
-              <DownloadMenu onExportPng={handleExportPng} onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} />
+              <DownloadMenu
+                items={[
+                  { label: "PNG", icon: <PngIcon />, onSelect: handleExportPng },
+                  { label: "PDF", icon: <PdfIcon />, onSelect: handleExportPdf },
+                  { label: "Excel", icon: <ExcelIcon />, onSelect: handleExportExcel },
+                ]}
+              />
             </div>
           </div>
         </Card.Header>
@@ -267,106 +262,6 @@ export function SplitSummary() {
         </Card.Footer>
       </Card>
     </div>
-  );
-}
-
-interface DownloadMenuProps {
-  onExportPng: () => void;
-  onExportPdf: () => void;
-  onExportExcel: () => void;
-}
-
-function DownloadMenu({ onExportPng, onExportPdf, onExportExcel }: DownloadMenuProps) {
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const listRef = useRef<(HTMLElement | null)[]>([]);
-
-  const { refs, floatingStyles, context } = useFloating({
-    open,
-    onOpenChange: setOpen,
-    placement: "bottom-end",
-    middleware: [offset(4), flip()],
-    whileElementsMounted: autoUpdate,
-  });
-  const click = useClick(context);
-  const dismiss = useDismiss(context);
-  const role = useRole(context, { role: "menu" });
-  const listNav = useListNavigation(context, {
-    listRef,
-    activeIndex,
-    onNavigate: setActiveIndex,
-    loop: true,
-  });
-  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
-    click,
-    dismiss,
-    role,
-    listNav,
-  ]);
-
-  const items = [
-    { label: "PNG", onSelect: onExportPng },
-    { label: "PDF", onSelect: onExportPdf },
-    { label: "Excel", onSelect: onExportExcel },
-  ];
-
-  return (
-    <>
-      <Button
-        ref={refs.setReference}
-        variant="secondary"
-        size="sm"
-        iconOnly
-        aria-label="Download"
-        {...getReferenceProps()}
-      >
-        <DownloadIcon />
-      </Button>
-      {open && (
-        <FloatingPortal>
-          <FloatingFocusManager context={context} modal={false}>
-            <ul
-              ref={refs.setFloating}
-              style={floatingStyles}
-              className="z-50 min-w-32 rounded-md border border-border bg-surface py-1 shadow-elevation"
-              {...getFloatingProps()}
-            >
-              {items.map((item, index) => (
-                <li
-                  key={item.label}
-                  ref={(node) => {
-                    listRef.current[index] = node;
-                  }}
-                  role="menuitem"
-                  tabIndex={index === activeIndex ? 0 : -1}
-                  className={`cursor-pointer px-3 py-1.5 text-sm text-text outline-none ${
-                    index === activeIndex ? "bg-surface-hover" : ""
-                  }`}
-                  {...getItemProps({
-                    onClick: () => {
-                      item.onSelect();
-                      setOpen(false);
-                    },
-                  })}
-                >
-                  {item.label}
-                </li>
-              ))}
-            </ul>
-          </FloatingFocusManager>
-        </FloatingPortal>
-      )}
-    </>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M12 3v12" />
-      <path d="M7 10l5 5 5-5" />
-      <path d="M5 21h14" />
-    </svg>
   );
 }
 

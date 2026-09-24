@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { canAdvance, getAdvanceBlockedReason, useReceiptStore } from "./useReceiptStore";
 import type { WizardStep } from "./useReceiptStore";
 
@@ -250,6 +250,23 @@ describe("useReceiptStore actions", () => {
     useReceiptStore.setState({ currencyAutoDetected: false });
     useReceiptStore.getState().resetAll();
     expect(useReceiptStore.getState().currencyAutoDetected).toBe(true);
+  });
+
+  describe("receiptDate defaulting", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 2, 5)); // local March 5, 2026
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("resetAll sets receiptDate to today, in local time", () => {
+      useReceiptStore.setState({ receiptDate: "2020-01-01" });
+      useReceiptStore.getState().resetAll();
+      expect(useReceiptStore.getState().receiptDate).toBe("2026-03-05");
+    });
   });
 
   it("setCountry sets the region and its currency, and marks currency as manually chosen", () => {

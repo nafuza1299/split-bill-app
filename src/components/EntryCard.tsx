@@ -1,9 +1,13 @@
+import ExcelJS from "exceljs";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
-import { entryTitle } from "../lib/entries";
+import { DownloadMenu, ExcelIcon, PdfIcon, PngIcon } from "./catalyst/DownloadMenu/DownloadMenu";
+import { entryTitle, receiptTextInputFromSnapshot } from "../lib/entries";
 import { formatMoney } from "../lib/money";
+import { buildReceiptRows, sanitizeFilename } from "../lib/receiptText";
 import { calculateSplit } from "../lib/splitCalculator";
+import { buildReceiptTextPdf, buildReceiptTextPng } from "../lib/textExport";
 import type { SavedEntry } from "../store/useEntriesStore";
 
 export interface EntryCardProps {
@@ -35,6 +39,47 @@ export function EntryCard({ entry, onOpen, onDelete }: EntryCardProps) {
     }
   };
 
+  const filenameBase = sanitizeFilename(snapshot.receiptName) + (snapshot.receiptDate ? `-${snapshot.receiptDate}` : "");
+
+  const handleExportPng = () => {
+    try {
+      const dataUrl = buildReceiptTextPng(receiptTextInputFromSnapshot(snapshot, result));
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${filenameBase}.png`;
+      a.click();
+    } catch (err) {
+      console.error("Export as PNG failed", err);
+    }
+  };
+
+  const handleExportPdf = () => {
+    try {
+      buildReceiptTextPdf(receiptTextInputFromSnapshot(snapshot, result)).save(`${filenameBase}.pdf`);
+    } catch (err) {
+      console.error("Export as PDF failed", err);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.addWorksheet("Split").addRows(buildReceiptRows(receiptTextInputFromSnapshot(snapshot, result)));
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filenameBase}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export as Excel failed", err);
+    }
+  };
+
   return (
     <Card
       interactive
@@ -50,9 +95,18 @@ export function EntryCard({ entry, onOpen, onDelete }: EntryCardProps) {
             <Card.Description>{new Date(snapshot.receiptDate).toLocaleDateString()}</Card.Description>
           )}
         </div>
-        <Button variant="ghost" size="sm" iconOnly aria-label="Delete entry" onClick={handleDelete}>
-          ✕
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          <DownloadMenu
+            items={[
+              { label: "PNG", icon: <PngIcon />, onSelect: handleExportPng },
+              { label: "PDF", icon: <PdfIcon />, onSelect: handleExportPdf },
+              { label: "Excel", icon: <ExcelIcon />, onSelect: handleExportExcel },
+            ]}
+          />
+          <Button variant="ghost" size="sm" iconOnly aria-label="Delete entry" onClick={handleDelete}>
+            ✕
+          </Button>
+        </div>
       </Card.Header>
       <Card.Body>
         <div className="flex items-center justify-between text-sm text-text-muted">

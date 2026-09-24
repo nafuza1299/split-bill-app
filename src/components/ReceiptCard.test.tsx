@@ -16,6 +16,7 @@ describe("ReceiptCard", () => {
   });
 
   it("hides the date line when receiptDate is empty", () => {
+    useReceiptStore.setState({ receiptDate: "" });
     render(<ReceiptCard />);
     expect(screen.queryByText(/\d{1,2}\/\d{1,2}\/\d{4}/)).not.toBeInTheDocument();
   });
