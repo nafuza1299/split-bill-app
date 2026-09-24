@@ -4,9 +4,11 @@ import { SplitSummary, shouldIncludeInExport } from "./SplitSummary";
 import { useReceiptStore } from "../store/useReceiptStore";
 import { alice, pizza, twoPeople } from "../test/fixtures";
 
-const { addImageMock, saveMock } = vi.hoisted(() => ({
+const { addImageMock, saveMock, addRowsMock, writeBufferMock } = vi.hoisted(() => ({
   addImageMock: vi.fn(),
   saveMock: vi.fn(),
+  addRowsMock: vi.fn(),
+  writeBufferMock: vi.fn(() => Promise.resolve(new Uint8Array([1, 2, 3]))),
 }));
 
 vi.mock("jspdf", () => ({
@@ -19,13 +21,30 @@ vi.mock("html-to-image", () => ({
   toPng: vi.fn(() => Promise.resolve("data:image/png;base64,abc")),
 }));
 
+vi.mock("exceljs", () => ({
+  default: {
+    Workbook: vi.fn().mockImplementation(function MockWorkbook() {
+      return {
+        addWorksheet: vi.fn(() => ({ addRows: addRowsMock })),
+        xlsx: { writeBuffer: writeBufferMock },
+      };
+    }),
+  },
+}));
+
 import { toPng } from "html-to-image";
+
+function openDownloadMenu() {
+  fireEvent.click(screen.getByRole("button", { name: "Download" }));
+}
 
 describe("SplitSummary", () => {
   beforeEach(() => {
     vi.mocked(toPng).mockResolvedValue("data:image/png;base64,abc");
     addImageMock.mockClear();
     saveMock.mockClear();
+    addRowsMock.mockClear();
+    writeBufferMock.mockClear();
   });
 
   afterEach(() => {
@@ -138,7 +157,8 @@ describe("SplitSummary", () => {
       if (tag === "a") captured = el as HTMLAnchorElement;
       return el;
     });
-    fireEvent.click(screen.getByRole("button", { name: "Export as PNG" }));
+    openDownloadMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "PNG" }));
     await vi.waitFor(() => expect(captured).not.toBeNull());
     expect(toPng).toHaveBeenCalled();
     expect(captured!.href).toContain("data:image/png");
@@ -155,10 +175,31 @@ describe("SplitSummary", () => {
       return Promise.resolve(undefined);
     });
     render(<SplitSummary />);
-    fireEvent.click(screen.getByRole("button", { name: "Export as PDF" }));
+    openDownloadMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
     await vi.waitFor(() => expect(saveMock).toHaveBeenCalled());
     expect(addImageMock).toHaveBeenCalled();
     expect(saveMock).toHaveBeenCalledWith("Joes-Diner-2026-08-23.pdf");
+  });
+
+  it("exports as Excel via ExcelJS with the built rows", async () => {
+    seedTwoPeopleOneItem();
+    let captured: HTMLAnchorElement | null = null;
+    const originalCreateElement = document.createElement.bind(document);
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const createSpy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      const el = originalCreateElement(tag);
+      if (tag === "a") captured = el as HTMLAnchorElement;
+      return el;
+    });
+    render(<SplitSummary />);
+    openDownloadMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Excel" }));
+    await vi.waitFor(() => expect(captured).not.toBeNull());
+    expect(addRowsMock).toHaveBeenCalledWith(expect.arrayContaining([["Joe's Diner"]]));
+    expect(captured!.download).toBe("Joes-Diner-2026-08-23.xlsx");
+    clickSpy.mockRestore();
+    createSpy.mockRestore();
   });
 
   it("uses just the receipt name as the filename base when no date is set", async () => {
@@ -169,7 +210,8 @@ describe("SplitSummary", () => {
       items: [],
     });
     render(<SplitSummary />);
-    fireEvent.click(screen.getByRole("button", { name: "Export as PDF" }));
+    openDownloadMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
     await vi.waitFor(() => expect(saveMock).toHaveBeenCalled());
     expect(saveMock).toHaveBeenCalledWith("Joes-Diner.pdf");
   });
@@ -179,7 +221,8 @@ describe("SplitSummary", () => {
     vi.mocked(toPng).mockRejectedValueOnce(new Error("boom"));
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<SplitSummary />);
-    fireEvent.click(screen.getByRole("button", { name: "Export as PNG" }));
+    openDownloadMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "PNG" }));
     await vi.waitFor(() => expect(errorSpy).toHaveBeenCalled());
     expect(errorSpy).toHaveBeenCalledWith("Export as PNG failed", expect.any(Error));
     errorSpy.mockRestore();
@@ -190,7 +233,8 @@ describe("SplitSummary", () => {
     vi.mocked(toPng).mockRejectedValueOnce(new Error("boom"));
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<SplitSummary />);
-    fireEvent.click(screen.getByRole("button", { name: "Export as PDF" }));
+    openDownloadMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
     await vi.waitFor(() => expect(errorSpy).toHaveBeenCalled());
     expect(errorSpy).toHaveBeenCalledWith("Export as PDF failed", expect.any(Error));
     errorSpy.mockRestore();

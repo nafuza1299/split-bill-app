@@ -1,4 +1,18 @@
+import {
+  autoUpdate,
+  flip,
+  FloatingFocusManager,
+  FloatingPortal,
+  offset,
+  useClick,
+  useDismiss,
+  useFloating,
+  useInteractions,
+  useListNavigation,
+  useRole,
+} from "@floating-ui/react";
 import { useRef, useState } from "react";
+import ExcelJS from "exceljs";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "./catalyst/Button/Button";
@@ -7,7 +21,7 @@ import { Tooltip } from "./catalyst/Tooltip/Tooltip";
 import { ReceiptCard } from "./ReceiptCard";
 import { countryCodes } from "../lib/countryCodes";
 import { formatMoney } from "../lib/money";
-import { formatPersonShareText, formatReceiptText, sanitizeFilename } from "../lib/receiptText";
+import { buildReceiptRows, formatPersonShareText, formatReceiptText, sanitizeFilename } from "../lib/receiptText";
 import { useReceiptStore, useSplitResult } from "../store/useReceiptStore";
 import { personItemShareCents, type Person, type ReceiptItem } from "../lib/splitCalculator";
 
@@ -43,22 +57,24 @@ export function SplitSummary() {
   const splitAmongCount = (itemId: string): number =>
     splitMode === "assign" ? (assignments[itemId] ?? []).length : people.length;
 
+  const buildTextInput = () => ({
+    receiptName,
+    dateLabel: receiptDate ? new Date(receiptDate).toLocaleDateString() : "",
+    items,
+    taxCents,
+    serviceCents,
+    itemSubtotalCents: result.itemSubtotalCents,
+    grandTotalCents: result.grandTotalCents,
+    currency,
+    people: people.map((person) => ({
+      name: person.name,
+      totalCents: safeGet(result.personTotals, person.id),
+      itemNames: itemsForPerson(person.id).map((item) => item.name || "Untitled item"),
+    })),
+  });
+
   const handleCopy = async () => {
-    const text = formatReceiptText({
-      receiptName,
-      dateLabel: receiptDate ? new Date(receiptDate).toLocaleDateString() : "",
-      items,
-      taxCents,
-      serviceCents,
-      itemSubtotalCents: result.itemSubtotalCents,
-      grandTotalCents: result.grandTotalCents,
-      currency,
-      people: people.map((person) => ({
-        name: person.name,
-        totalCents: safeGet(result.personTotals, person.id),
-        itemNames: itemsForPerson(person.id).map((item) => item.name || "Untitled item"),
-      })),
-    });
+    const text = formatReceiptText(buildTextInput());
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -137,6 +153,25 @@ export function SplitSummary() {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.addWorksheet("Split").addRows(buildReceiptRows(buildTextInput()));
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filenameBase}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export as Excel failed", err);
+    }
+  };
+
   return (
     <div className="space-y-4" ref={exportRef}>
       <ReceiptCard />
@@ -152,12 +187,7 @@ export function SplitSummary() {
               <Button variant="secondary" size="sm" onClick={handleCopy}>
                 {copied ? "Copied!" : "Copy to clipboard"}
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportPng}>
-                Export as PNG
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportPdf}>
-                Export as PDF
-              </Button>
+              <DownloadMenu onExportPng={handleExportPng} onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} />
             </div>
           </div>
         </Card.Header>
@@ -237,6 +267,106 @@ export function SplitSummary() {
         </Card.Footer>
       </Card>
     </div>
+  );
+}
+
+interface DownloadMenuProps {
+  onExportPng: () => void;
+  onExportPdf: () => void;
+  onExportExcel: () => void;
+}
+
+function DownloadMenu({ onExportPng, onExportPdf, onExportExcel }: DownloadMenuProps) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const listRef = useRef<(HTMLElement | null)[]>([]);
+
+  const { refs, floatingStyles, context } = useFloating({
+    open,
+    onOpenChange: setOpen,
+    placement: "bottom-end",
+    middleware: [offset(4), flip()],
+    whileElementsMounted: autoUpdate,
+  });
+  const click = useClick(context);
+  const dismiss = useDismiss(context);
+  const role = useRole(context, { role: "menu" });
+  const listNav = useListNavigation(context, {
+    listRef,
+    activeIndex,
+    onNavigate: setActiveIndex,
+    loop: true,
+  });
+  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
+    click,
+    dismiss,
+    role,
+    listNav,
+  ]);
+
+  const items = [
+    { label: "PNG", onSelect: onExportPng },
+    { label: "PDF", onSelect: onExportPdf },
+    { label: "Excel", onSelect: onExportExcel },
+  ];
+
+  return (
+    <>
+      <Button
+        ref={refs.setReference}
+        variant="secondary"
+        size="sm"
+        iconOnly
+        aria-label="Download"
+        {...getReferenceProps()}
+      >
+        <DownloadIcon />
+      </Button>
+      {open && (
+        <FloatingPortal>
+          <FloatingFocusManager context={context} modal={false}>
+            <ul
+              ref={refs.setFloating}
+              style={floatingStyles}
+              className="z-50 min-w-32 rounded-md border border-border bg-surface py-1 shadow-elevation"
+              {...getFloatingProps()}
+            >
+              {items.map((item, index) => (
+                <li
+                  key={item.label}
+                  ref={(node) => {
+                    listRef.current[index] = node;
+                  }}
+                  role="menuitem"
+                  tabIndex={index === activeIndex ? 0 : -1}
+                  className={`cursor-pointer px-3 py-1.5 text-sm text-text outline-none ${
+                    index === activeIndex ? "bg-surface-hover" : ""
+                  }`}
+                  {...getItemProps({
+                    onClick: () => {
+                      item.onSelect();
+                      setOpen(false);
+                    },
+                  })}
+                >
+                  {item.label}
+                </li>
+              ))}
+            </ul>
+          </FloatingFocusManager>
+        </FloatingPortal>
+      )}
+    </>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M12 3v12" />
+      <path d="M7 10l5 5 5-5" />
+      <path d="M5 21h14" />
+    </svg>
   );
 }
 

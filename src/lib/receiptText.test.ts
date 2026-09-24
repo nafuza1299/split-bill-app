@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPersonShareText, formatReceiptText, sanitizeFilename } from "./receiptText";
+import { buildReceiptRows, formatPersonShareText, formatReceiptText, sanitizeFilename } from "./receiptText";
 import type { ReceiptItem } from "./splitCalculator";
 
 describe("formatReceiptText", () => {
@@ -169,6 +169,71 @@ describe("formatPersonShareText", () => {
     expect(text).toContain("Service charge: $0.50");
     expect(text).toContain("Total: $16.50");
     expect(text).not.toContain("Bob");
+  });
+});
+
+describe("buildReceiptRows", () => {
+  const items: ReceiptItem[] = [{ id: "i1", name: "Pizza", quantity: 2, unitPriceCents: 1000 }];
+
+  it("puts the receipt name and date in the first rows, and omits the date row when empty", () => {
+    const rows = buildReceiptRows({
+      receiptName: "Joe's Diner",
+      dateLabel: "8/23/2026",
+      items: [],
+      taxCents: 0,
+      serviceCents: 0,
+      itemSubtotalCents: 0,
+      grandTotalCents: 0,
+      currency: "USD",
+      people: [],
+    });
+    expect(rows[0]).toEqual(["Joe's Diner"]);
+    expect(rows[1]).toEqual(["8/23/2026"]);
+
+    const rowsNoDate = buildReceiptRows({
+      receiptName: "",
+      dateLabel: "",
+      items: [],
+      taxCents: 0,
+      serviceCents: 0,
+      itemSubtotalCents: 0,
+      grandTotalCents: 0,
+      currency: "USD",
+      people: [],
+    });
+    expect(rowsNoDate[0]).toEqual(["Receipt"]);
+    expect(rowsNoDate[1]).toEqual([]);
+  });
+
+  it("includes an item row with qty and formatted prices", () => {
+    const rows = buildReceiptRows({
+      receiptName: "Receipt",
+      dateLabel: "",
+      items,
+      taxCents: 0,
+      serviceCents: 0,
+      itemSubtotalCents: 2000,
+      grandTotalCents: 2000,
+      currency: "USD",
+      people: [],
+    });
+    expect(rows).toContainEqual(["Pizza", 2, "$10.00", "$20.00"]);
+  });
+
+  it("includes totals and a per-person split row", () => {
+    const rows = buildReceiptRows({
+      receiptName: "Receipt",
+      dateLabel: "",
+      items: [],
+      taxCents: 250,
+      serviceCents: 100,
+      itemSubtotalCents: 3000,
+      grandTotalCents: 3350,
+      currency: "USD",
+      people: [{ name: "Alice", totalCents: 3350, itemNames: ["Pizza"] }],
+    });
+    expect(rows).toContainEqual(["Total", "$33.50"]);
+    expect(rows).toContainEqual(["Alice", "$33.50", "Pizza"]);
   });
 });
 

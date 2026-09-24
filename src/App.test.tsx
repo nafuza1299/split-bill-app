@@ -18,7 +18,7 @@ describe("App", () => {
   it("returns Home when the wizard's Home button is clicked", () => {
     render(<App />);
     fireEvent.click(screen.getByText("+ New split bill"));
-    fireEvent.click(screen.getByText("← Home"));
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     expect(useEntriesStore.getState().view).toBe("home");
     expect(screen.getByText("+ New split bill")).toBeInTheDocument();
   });

@@ -73,7 +73,7 @@ describe("SplitBillWizard", () => {
 
   it("returns to Home via the Home button", () => {
     render(<SplitBillWizard />);
-    fireEvent.click(screen.getByText("← Home"));
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     expect(useEntriesStore.getState().view).toBe("home");
   });
 });

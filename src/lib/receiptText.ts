@@ -77,6 +77,38 @@ export function formatPersonShareText(input: PersonShareTextInput): string {
   return lines.join("\n");
 }
 
+export function buildReceiptRows(input: ReceiptTextInput): (string | number)[][] {
+  const rows: (string | number)[][] = [[input.receiptName || "Receipt"]];
+  if (input.dateLabel) rows.push([input.dateLabel]);
+  rows.push([]);
+
+  rows.push(["Item", "Qty", "Unit Price", "Line Total"]);
+  for (const item of input.items) {
+    rows.push([
+      item.name || "Untitled item",
+      item.quantity,
+      formatMoney(item.unitPriceCents, input.currency),
+      formatMoney(item.quantity * item.unitPriceCents, input.currency),
+    ]);
+  }
+
+  rows.push(
+    [],
+    ["Subtotal", formatMoney(input.itemSubtotalCents, input.currency)],
+    ["Tax", formatMoney(input.taxCents, input.currency)],
+    ["Service charge", formatMoney(input.serviceCents, input.currency)],
+    ["Total", formatMoney(input.grandTotalCents, input.currency)],
+    [],
+    ["Split"],
+    ["Name", "Total", "Items"],
+  );
+  for (const person of input.people) {
+    rows.push([person.name, formatMoney(person.totalCents, input.currency), person.itemNames.join(", ")]);
+  }
+
+  return rows;
+}
+
 export function sanitizeFilename(name: string): string {
   const cleaned = name
     .trim()

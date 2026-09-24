@@ -34,6 +34,8 @@
   "dependencies": {
     "@floating-ui/react": "^0.27.20",
     "@tailwindcss/vite": "^4.3.3",
+    "exceljs": "^4.4.0",
+    "flag-icons": "^7.5.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "react": "^19.2.8",

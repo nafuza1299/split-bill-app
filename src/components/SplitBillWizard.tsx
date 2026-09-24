@@ -32,7 +32,7 @@ export function SplitBillWizard() {
     <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 pt-10 pb-24">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={goHome}>
-          ← Home
+          <HomeIcon /> Home
         </Button>
         <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
         <Button variant="destructive" size="sm" onClick={clearAll}>
@@ -68,5 +68,15 @@ export function SplitBillWizard() {
 
       <StepBar />
     </div>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M3 11l9-8 9 8" />
+      <path d="M5 10v10h14V10" />
+      <path d="M9 20v-6h6v6" />
+    </svg>
   );
 }
