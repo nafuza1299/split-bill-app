@@ -9,7 +9,7 @@ import { detectRegion } from "../lib/locale";
 
 export type WizardStep = "people" | "items" | "mode" | "assign" | "summary";
 
-interface ReceiptState {
+export interface ReceiptState {
   step: WizardStep;
   receiptName: string;
   receiptDate: string;

@@ -1,72 +1,25 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
-import { useReceiptStore } from "./store/useReceiptStore";
-import { twoPeople } from "./test/fixtures";
+import { useEntriesStore } from "./store/useEntriesStore";
 
 describe("App", () => {
-  it("renders the People step by default and hides the Back button", () => {
+  it("shows Home by default", () => {
     render(<App />);
+    expect(screen.getByText("+ New split bill")).toBeInTheDocument();
+  });
+
+  it("switches to the wizard when a new entry is created", () => {
+    render(<App />);
+    fireEvent.click(screen.getByText("+ New split bill"));
     expect(screen.getByText("Who's splitting the bill?")).toBeInTheDocument();
-    expect(screen.queryByText("Back")).not.toBeInTheDocument();
   });
 
-  it("shows the Back button on a non-first step", () => {
-    useReceiptStore.setState({ step: "items" });
+  it("returns Home when the wizard's Home button is clicked", () => {
     render(<App />);
-    expect(screen.getByText("Back")).toBeInTheDocument();
-  });
-
-  it("hides the Next button on the summary step", () => {
-    useReceiptStore.setState({ step: "summary" });
-    render(<App />);
-    expect(screen.queryByText("Next")).not.toBeInTheDocument();
-  });
-
-  it("shows the Next button on a non-last step", () => {
-    render(<App />);
-    expect(screen.getByText("Next")).toBeInTheDocument();
-  });
-
-  it("disables Next when canAdvance is false", () => {
-    render(<App />);
-    expect(screen.getByText("Next")).toBeDisabled();
-  });
-
-  it("enables Next when canAdvance is true", () => {
-    useReceiptStore.setState({ people: twoPeople });
-    render(<App />);
-    expect(screen.getByText("Next")).not.toBeDisabled();
-  });
-
-  it("calls nextStep/prevStep on button click", () => {
-    useReceiptStore.setState({ people: twoPeople });
-    render(<App />);
-    fireEvent.click(screen.getByText("Next"));
-    expect(useReceiptStore.getState().step).toBe("items");
-    fireEvent.click(screen.getByText("Back"));
-    expect(useReceiptStore.getState().step).toBe("people");
-  });
-
-  describe("Clear all", () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-
-    it("resets state when the user confirms", () => {
-      useReceiptStore.setState({ people: twoPeople });
-      vi.spyOn(window, "confirm").mockReturnValue(true);
-      render(<App />);
-      fireEvent.click(screen.getByText("Clear all"));
-      expect(useReceiptStore.getState().people).toHaveLength(0);
-    });
-
-    it("leaves state untouched when the user cancels", () => {
-      useReceiptStore.setState({ people: twoPeople });
-      vi.spyOn(window, "confirm").mockReturnValue(false);
-      render(<App />);
-      fireEvent.click(screen.getByText("Clear all"));
-      expect(useReceiptStore.getState().people).toEqual(twoPeople);
-    });
+    fireEvent.click(screen.getByText("+ New split bill"));
+    fireEvent.click(screen.getByText("← Home"));
+    expect(useEntriesStore.getState().view).toBe("home");
+    expect(screen.getByText("+ New split bill")).toBeInTheDocument();
   });
 });

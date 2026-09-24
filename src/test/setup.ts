@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
-import { resetReceiptStore } from "./resetStore";
+import { resetEntriesStore, resetReceiptStore } from "./resetStore";
 
 afterEach(() => {
   cleanup();
@@ -23,6 +23,7 @@ Object.defineProperty(window, "matchMedia", {
 
 beforeEach(() => {
   resetReceiptStore();
+  resetEntriesStore();
   Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
   HTMLImageElement.prototype.decode = vi.fn().mockResolvedValue(undefined);
   // App fires a geoip lookup (src/lib/geoip.ts) on mount - stub it out so tests
