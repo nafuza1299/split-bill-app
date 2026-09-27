@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import ExcelJS from "exceljs";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "./catalyst/Button/Button";
@@ -9,7 +8,8 @@ import { Tooltip } from "./catalyst/Tooltip/Tooltip";
 import { ReceiptCard } from "./ReceiptCard";
 import { countryCodes } from "../lib/countryCodes";
 import { formatMoney } from "../lib/money";
-import { buildReceiptRows, formatPersonShareText, formatReceiptText, sanitizeFilename } from "../lib/receiptText";
+import { formatPersonShareText, formatReceiptText, sanitizeFilename } from "../lib/receiptText";
+import { buildTemplateWorkbook } from "../lib/receiptTemplate";
 import { useReceiptStore, useSplitResult } from "../store/useReceiptStore";
 import {
   itemsForPerson as sharedItemsForPerson,
@@ -144,8 +144,17 @@ export function SplitSummary() {
 
   const handleExportExcel = async () => {
     try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.addWorksheet("Split").addRows(buildReceiptRows(buildTextInput()));
+      const workbook = buildTemplateWorkbook({
+        receiptName,
+        receiptDate,
+        currency,
+        splitMode,
+        taxCents,
+        serviceCents,
+        people,
+        items,
+        assignments,
+      });
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

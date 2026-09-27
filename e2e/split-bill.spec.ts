@@ -50,11 +50,32 @@ async function seedReceipt(page: Page, overrides: Record<string, unknown> = {}) 
   await page.addInitScript((value) => {
     // addInitScript re-runs on every navigation, so only seed when there is
     // nothing there — otherwise a reload would clobber what the app just saved.
-    if (localStorage.getItem('split-bill-receipt')) return
-    localStorage.setItem(
-      'split-bill-receipt',
-      JSON.stringify({ savedAt: Date.now(), value: { state: value, version: 0 } }),
-    )
+    if (!localStorage.getItem('split-bill-receipt')) {
+      localStorage.setItem(
+        'split-bill-receipt',
+        JSON.stringify({ savedAt: Date.now(), value: { state: value, version: 0 } }),
+      )
+    }
+    // The app now opens on a Home screen listing saved entries rather than
+    // straight into the wizard. Seed useEntriesStore's own persisted state
+    // already "inside" this receipt (view: wizard, a matching activeEntryId)
+    // so `page.goto('/')` lands in the wizard exactly like before Home
+    // existed, instead of every seeded test needing an extra Home-screen step.
+    if (!localStorage.getItem('split-bill-entries')) {
+      localStorage.setItem(
+        'split-bill-entries',
+        JSON.stringify({
+          state: {
+            entries: [{ id: 'seeded-entry', updatedAt: Date.now(), snapshot: value }],
+            activeEntryId: 'seeded-entry',
+            view: 'wizard',
+            homeRegion: null,
+            legacyMigrated: true,
+          },
+          version: 0,
+        }),
+      )
+    }
   }, state)
 }
 
@@ -73,6 +94,7 @@ const next = (page: Page) => page.getByRole('button', { name: 'Next' })
 test('walks the whole wizard from an empty receipt to the summary', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Split Bill' })).toBeVisible()
+  await page.getByText('+ New split bill').click()
 
   await page.getByLabel('Receipt name').fill(RECEIPT_NAME)
   await page.getByLabel('Date').fill(RECEIPT_DATE)
@@ -191,7 +213,8 @@ test('exports the summary as a PNG named after the receipt', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible()
 
   const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Export as PNG' }).click()
+  await page.getByRole('button', { name: 'Download' }).click()
+  await page.getByRole('menuitem', { name: 'PNG' }).click()
   expect((await download).suggestedFilename()).toBe(`${FILENAME_BASE}.png`)
 })
 
@@ -201,7 +224,8 @@ test('exports the summary as a PDF named after the receipt', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible()
 
   const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Export as PDF' }).click()
+  await page.getByRole('button', { name: 'Download' }).click()
+  await page.getByRole('menuitem', { name: 'PDF' }).click()
   expect((await download).suggestedFilename()).toBe(`${FILENAME_BASE}.pdf`)
 })
 

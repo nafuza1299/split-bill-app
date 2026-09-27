@@ -1,11 +1,11 @@
-import ExcelJS from "exceljs";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { Button } from "./catalyst/Button/Button";
 import { Card } from "./catalyst/Card/Card";
 import { DownloadMenu, ExcelIcon, PdfIcon, PngIcon } from "./catalyst/DownloadMenu/DownloadMenu";
 import { entryTitle, receiptTextInputFromSnapshot } from "../lib/entries";
 import { formatMoney } from "../lib/money";
-import { buildReceiptRows, sanitizeFilename } from "../lib/receiptText";
+import { sanitizeFilename } from "../lib/receiptText";
+import { buildTemplateWorkbook } from "../lib/receiptTemplate";
 import { calculateSplit } from "../lib/splitCalculator";
 import { buildReceiptTextPdf, buildReceiptTextPng } from "../lib/textExport";
 import type { SavedEntry } from "../store/useEntriesStore";
@@ -63,8 +63,7 @@ export function EntryCard({ entry, onOpen, onDelete }: EntryCardProps) {
 
   const handleExportExcel = async () => {
     try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.addWorksheet("Split").addRows(buildReceiptRows(receiptTextInputFromSnapshot(snapshot, result)));
+      const workbook = buildTemplateWorkbook(snapshot);
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

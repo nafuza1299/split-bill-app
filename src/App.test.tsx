@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
 import { useEntriesStore } from "./store/useEntriesStore";
+import { useReceiptStore } from "./store/useReceiptStore";
 
 describe("App", () => {
   it("shows Home by default", () => {
@@ -21,5 +22,26 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Home" }));
     expect(useEntriesStore.getState().view).toBe("home");
     expect(screen.getByText("+ New split bill")).toBeInTheDocument();
+  });
+
+  describe("geoip detection on mount", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("applies the detected region once the lookup resolves", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: true, json: async () => ({ country: "JP" }) }),
+      );
+      render(<App />);
+      await waitFor(() => expect(useReceiptStore.getState().detectedRegion).toBe("JP"));
+    });
+
+    it("leaves the region alone when the lookup fails", async () => {
+      render(<App />);
+      const before = useReceiptStore.getState().detectedRegion;
+      await waitFor(() => expect(useReceiptStore.getState().detectedRegion).toBe(before));
+    });
   });
 });

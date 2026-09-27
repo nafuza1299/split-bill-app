@@ -3,9 +3,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { EntryCard } from "./EntryCard";
 import type { SavedEntry } from "../store/useEntriesStore";
 
-const { saveMock, addRowsMock, writeBufferMock } = vi.hoisted(() => ({
+const { saveMock, buildTemplateWorkbookMock, writeBufferMock } = vi.hoisted(() => ({
   saveMock: vi.fn(),
-  addRowsMock: vi.fn(),
+  buildTemplateWorkbookMock: vi.fn(),
   writeBufferMock: vi.fn(() => Promise.resolve(new Uint8Array([1, 2, 3]))),
 }));
 
@@ -15,15 +15,8 @@ vi.mock("jspdf", () => ({
   }),
 }));
 
-vi.mock("exceljs", () => ({
-  default: {
-    Workbook: vi.fn().mockImplementation(function MockWorkbook() {
-      return {
-        addWorksheet: vi.fn(() => ({ addRows: addRowsMock })),
-        xlsx: { writeBuffer: writeBufferMock },
-      };
-    }),
-  },
+vi.mock("../lib/receiptTemplate", () => ({
+  buildTemplateWorkbook: buildTemplateWorkbookMock,
 }));
 
 const entry: SavedEntry = {
@@ -53,7 +46,8 @@ function openDownloadMenu() {
 describe("EntryCard", () => {
   beforeEach(() => {
     saveMock.mockClear();
-    addRowsMock.mockClear();
+    buildTemplateWorkbookMock.mockClear();
+    buildTemplateWorkbookMock.mockReturnValue({ xlsx: { writeBuffer: writeBufferMock } });
     writeBufferMock.mockClear();
   });
 
@@ -77,6 +71,42 @@ describe("EntryCard", () => {
     render(<EntryCard entry={entry} onOpen={onOpen} onDelete={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Delete entry" }));
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("deletes the entry once the confirm dialog is accepted", () => {
+    const onDelete = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<EntryCard entry={entry} onOpen={vi.fn()} onDelete={onDelete} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete entry" }));
+    expect(window.confirm).toHaveBeenCalledWith('Delete "Joe\'s Diner"?');
+    expect(onDelete).toHaveBeenCalledWith("e1");
+    vi.restoreAllMocks();
+  });
+
+  it("opens the entry on Enter or Space", () => {
+    const onOpen = vi.fn();
+    render(<EntryCard entry={entry} onOpen={onOpen} onDelete={vi.fn()} />);
+    const card = screen.getByRole("button", { name: /Joe's Diner/ });
+    fireEvent.keyDown(card, { key: "Enter" });
+    fireEvent.keyDown(card, { key: " " });
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    expect(onOpen).toHaveBeenCalledWith("e1");
+  });
+
+  it("does not open the entry on an unrelated key", () => {
+    const onOpen = vi.fn();
+    render(<EntryCard entry={entry} onOpen={onOpen} onDelete={vi.fn()} />);
+    fireEvent.keyDown(screen.getByRole("button", { name: /Joe's Diner/ }), { key: "Tab" });
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("falls back to an even split when splitMode is null", () => {
+    const noModeEntry: SavedEntry = {
+      ...entry,
+      snapshot: { ...entry.snapshot, splitMode: null },
+    };
+    render(<EntryCard entry={noModeEntry} onOpen={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.getByText("$20.00")).toBeInTheDocument();
   });
 
   it("does not open the entry when the download button is clicked", () => {
@@ -106,13 +136,21 @@ describe("EntryCard", () => {
       expect(saveMock).toHaveBeenCalledWith("Joes-Diner-2026-08-23.pdf");
     });
 
+    it("omits the date from the filename when the receipt has none", () => {
+      const noDateEntry: SavedEntry = { ...entry, snapshot: { ...entry.snapshot, receiptDate: "" } };
+      render(<EntryCard entry={noDateEntry} onOpen={vi.fn()} onDelete={vi.fn()} />);
+      openDownloadMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
+      expect(saveMock).toHaveBeenCalledWith("Joes-Diner.pdf");
+    });
+
     it("exports as Excel via ExcelJS with the built rows", async () => {
       const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
       render(<EntryCard entry={entry} onOpen={vi.fn()} onDelete={vi.fn()} />);
       openDownloadMenu();
       fireEvent.click(screen.getByRole("menuitem", { name: "Excel" }));
       await vi.waitFor(() => expect(writeBufferMock).toHaveBeenCalled());
-      expect(addRowsMock).toHaveBeenCalledWith(expect.arrayContaining([["Joe's Diner"]]));
+      expect(buildTemplateWorkbookMock).toHaveBeenCalledWith(entry.snapshot);
       clickSpy.mockRestore();
     });
 
@@ -145,6 +183,41 @@ describe("EntryCard", () => {
       expect(captured!.href).toContain("data:image/png");
       expect(captured!.download).toBe("Joes-Diner-2026-08-23.png");
       clickSpy.mockRestore();
+    });
+
+    it("logs and does not throw when the PNG export fails", () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+        if (tag === "canvas") throw new Error("canvas unavailable");
+        return originalCreateElement(tag);
+      });
+      render(<EntryCard entry={entry} onOpen={vi.fn()} onDelete={vi.fn()} />);
+      openDownloadMenu();
+      expect(() => fireEvent.click(screen.getByRole("menuitem", { name: "PNG" }))).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledWith("Export as PNG failed", expect.any(Error));
+    });
+
+    it("logs and does not throw when the PDF export fails", () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      saveMock.mockImplementationOnce(() => {
+        throw new Error("save failed");
+      });
+      render(<EntryCard entry={entry} onOpen={vi.fn()} onDelete={vi.fn()} />);
+      openDownloadMenu();
+      expect(() => fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }))).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledWith("Export as PDF failed", expect.any(Error));
+    });
+
+    it("logs and does not throw when the Excel export fails", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      buildTemplateWorkbookMock.mockImplementationOnce(() => {
+        throw new Error("workbook build failed");
+      });
+      render(<EntryCard entry={entry} onOpen={vi.fn()} onDelete={vi.fn()} />);
+      openDownloadMenu();
+      fireEvent.click(screen.getByRole("menuitem", { name: "Excel" }));
+      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith("Export as Excel failed", expect.any(Error)));
     });
   });
 });

@@ -21,6 +21,7 @@ interface EntriesState {
 
   openEntry: (id: string) => void;
   createEntry: () => void;
+  importEntry: (snapshot: ReceiptSnapshot) => void;
   goHome: () => void;
   deleteEntry: (id: string) => void;
   setHomeRegion: (region: string) => void;
@@ -51,6 +52,11 @@ export const useEntriesStore = create<EntriesState>()(
         useReceiptStore.getState().resetAll();
         const region = get().homeRegion;
         if (region) useReceiptStore.getState().setCountry(region);
+        set({ activeEntryId: crypto.randomUUID(), view: "wizard" });
+      },
+
+      importEntry: (snapshot) => {
+        useReceiptStore.setState(snapshot);
         set({ activeEntryId: crypto.randomUUID(), view: "wizard" });
       },
 

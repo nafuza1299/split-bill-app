@@ -4,10 +4,10 @@ import { SplitSummary, shouldIncludeInExport } from "./SplitSummary";
 import { useReceiptStore } from "../store/useReceiptStore";
 import { alice, pizza, twoPeople } from "../test/fixtures";
 
-const { addImageMock, saveMock, addRowsMock, writeBufferMock } = vi.hoisted(() => ({
+const { addImageMock, saveMock, buildTemplateWorkbookMock, writeBufferMock } = vi.hoisted(() => ({
   addImageMock: vi.fn(),
   saveMock: vi.fn(),
-  addRowsMock: vi.fn(),
+  buildTemplateWorkbookMock: vi.fn(),
   writeBufferMock: vi.fn(() => Promise.resolve(new Uint8Array([1, 2, 3]))),
 }));
 
@@ -21,15 +21,8 @@ vi.mock("html-to-image", () => ({
   toPng: vi.fn(() => Promise.resolve("data:image/png;base64,abc")),
 }));
 
-vi.mock("exceljs", () => ({
-  default: {
-    Workbook: vi.fn().mockImplementation(function MockWorkbook() {
-      return {
-        addWorksheet: vi.fn(() => ({ addRows: addRowsMock })),
-        xlsx: { writeBuffer: writeBufferMock },
-      };
-    }),
-  },
+vi.mock("../lib/receiptTemplate", () => ({
+  buildTemplateWorkbook: buildTemplateWorkbookMock,
 }));
 
 import { toPng } from "html-to-image";
@@ -43,7 +36,8 @@ describe("SplitSummary", () => {
     vi.mocked(toPng).mockResolvedValue("data:image/png;base64,abc");
     addImageMock.mockClear();
     saveMock.mockClear();
-    addRowsMock.mockClear();
+    buildTemplateWorkbookMock.mockClear();
+    buildTemplateWorkbookMock.mockReturnValue({ xlsx: { writeBuffer: writeBufferMock } });
     writeBufferMock.mockClear();
   });
 
@@ -196,7 +190,9 @@ describe("SplitSummary", () => {
     openDownloadMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: "Excel" }));
     await vi.waitFor(() => expect(captured).not.toBeNull());
-    expect(addRowsMock).toHaveBeenCalledWith(expect.arrayContaining([["Joe's Diner"]]));
+    expect(buildTemplateWorkbookMock).toHaveBeenCalledWith(
+      expect.objectContaining({ receiptName: "Joe's Diner", currency: "USD" }),
+    );
     expect(captured!.download).toBe("Joes-Diner-2026-08-23.xlsx");
     clickSpy.mockRestore();
     createSpy.mockRestore();

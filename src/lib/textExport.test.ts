@@ -69,4 +69,17 @@ describe("buildReceiptTextPng", () => {
     expect(fillTextCalls.some((args) => args[0] === "Joe's Diner")).toBe(true);
     createSpy.mockRestore();
   });
+
+  it("throws when the canvas has no 2D context available", () => {
+    const originalCreateElement = document.createElement.bind(document);
+    const createSpy = vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag !== "canvas") return originalCreateElement(tag);
+      const canvas = originalCreateElement("canvas") as HTMLCanvasElement;
+      vi.spyOn(canvas, "getContext").mockReturnValue(null);
+      return canvas;
+    });
+
+    expect(() => buildReceiptTextPng(baseInput)).toThrow("Canvas 2D context unavailable");
+    createSpy.mockRestore();
+  });
 });
