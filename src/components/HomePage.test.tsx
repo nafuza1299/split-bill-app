@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { HomePage } from "./HomePage";
+import { ThemeProvider } from "./catalyst/theme/ThemeProvider";
 import { useEntriesStore } from "../store/useEntriesStore";
 import { useReceiptStore } from "../store/useReceiptStore";
 import type { ReceiptSnapshot } from "../lib/entries";
@@ -50,7 +51,7 @@ beforeEach(() => {
 
 describe("HomePage", () => {
   it("shows no entry cards when there are none", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     expect(screen.queryByRole("button", { name: /Imported Trip/ })).not.toBeInTheDocument();
   });
 
@@ -61,7 +62,7 @@ describe("HomePage", () => {
         { id: "new", updatedAt: 2, snapshot: { ...importedSnapshot, receiptName: "New Trip" } },
       ],
     });
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     const cards = screen.getAllByRole("button", { name: /Trip/ });
     expect(cards[0]).toHaveAccessibleName(expect.stringContaining("New Trip"));
     expect(cards[1]).toHaveAccessibleName(expect.stringContaining("Old Trip"));
@@ -71,7 +72,7 @@ describe("HomePage", () => {
     useEntriesStore.setState({
       entries: [{ id: "e1", updatedAt: 1, snapshot: importedSnapshot }],
     });
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     fireEvent.click(screen.getByRole("button", { name: /Imported Trip/ }));
     expect(useEntriesStore.getState().view).toBe("wizard");
     expect(useEntriesStore.getState().activeEntryId).toBe("e1");
@@ -82,32 +83,32 @@ describe("HomePage", () => {
       entries: [{ id: "e1", updatedAt: 1, snapshot: importedSnapshot }],
     });
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     fireEvent.click(screen.getByRole("button", { name: "Delete entry" }));
     expect(useEntriesStore.getState().entries).toHaveLength(0);
     vi.restoreAllMocks();
   });
 
   it("creates a fresh entry on click of + New split bill", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     fireEvent.click(screen.getByText("+ New split bill"));
     expect(useEntriesStore.getState().view).toBe("wizard");
   });
 
   it("creates a fresh entry on Enter/Space over + New split bill", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     fireEvent.keyDown(screen.getByRole("button", { name: "+ New split bill" }), { key: "Enter" });
     expect(useEntriesStore.getState().view).toBe("wizard");
   });
 
   it("does not create an entry on an unrelated key over + New split bill", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     fireEvent.keyDown(screen.getByRole("button", { name: "+ New split bill" }), { key: "Tab" });
     expect(useEntriesStore.getState().view).toBe("home");
   });
 
   it("opens the file picker on click of Import from Excel", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
     fireEvent.click(screen.getByRole("button", { name: /Import from Excel/ }));
     expect(clickSpy).toHaveBeenCalled();
@@ -115,7 +116,7 @@ describe("HomePage", () => {
   });
 
   it("opens the file picker on Enter/Space over Import from Excel", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
     fireEvent.keyDown(screen.getByRole("button", { name: /Import from Excel/ }), { key: " " });
     expect(clickSpy).toHaveBeenCalled();
@@ -123,7 +124,7 @@ describe("HomePage", () => {
   });
 
   it("does not open the file picker on an unrelated key over Import from Excel", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
     fireEvent.keyDown(screen.getByRole("button", { name: /Import from Excel/ }), { key: "Tab" });
     expect(clickSpy).not.toHaveBeenCalled();
@@ -133,13 +134,13 @@ describe("HomePage", () => {
   describe("region picker", () => {
     it("defaults to the browser-detected region when none is set", () => {
       useEntriesStore.setState({ homeRegion: null });
-      render(<HomePage />);
+      render(<ThemeProvider><HomePage /></ThemeProvider>);
       expect(screen.getByRole("combobox", { name: /Region/ })).toBeInTheDocument();
     });
 
     it("sets the home region when a country is picked, for future new entries", () => {
       useEntriesStore.setState({ homeRegion: "US" });
-      render(<HomePage />);
+      render(<ThemeProvider><HomePage /></ThemeProvider>);
       fireEvent.click(screen.getByRole("combobox", { name: /Region/ }));
       fireEvent.click(screen.getByRole("option", { name: /Japan/ }));
       expect(useEntriesStore.getState().homeRegion).toBe("JP");
@@ -150,7 +151,7 @@ describe("HomePage", () => {
 describe("HomePage — Import from Excel", () => {
   it("imports a valid file into a new wizard entry", async () => {
     parseTemplateWorkbookMock.mockReturnValue(importedSnapshot);
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     selectFile(new File(["stub"], "bill.xlsx"));
 
     await vi.waitFor(() => expect(useEntriesStore.getState().view).toBe("wizard"));
@@ -164,7 +165,7 @@ describe("HomePage — Import from Excel", () => {
       throw new Error("This doesn't look like a Split Bill Excel file.");
     });
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     selectFile(new File(["stub"], "not-a-bill.xlsx"));
 
     await vi.waitFor(() => expect(alertSpy).toHaveBeenCalledWith("This doesn't look like a Split Bill Excel file."));
@@ -177,7 +178,7 @@ describe("HomePage — Import from Excel", () => {
       throw "not an Error instance";
     });
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     selectFile(new File(["stub"], "bill.xlsx"));
 
     await vi.waitFor(() => expect(alertSpy).toHaveBeenCalledWith("Couldn't import that file."));
@@ -185,7 +186,7 @@ describe("HomePage — Import from Excel", () => {
   });
 
   it("does nothing when the file input is cleared without picking a file", () => {
-    render(<HomePage />);
+    render(<ThemeProvider><HomePage /></ThemeProvider>);
     const input = screen.getByLabelText("Choose Excel file to import") as HTMLInputElement;
     fireEvent.change(input, { target: { files: [] } });
     expect(useEntriesStore.getState().view).toBe("home");

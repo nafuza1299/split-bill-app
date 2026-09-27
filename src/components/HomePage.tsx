@@ -2,6 +2,7 @@ import { useRef, type ChangeEvent } from "react";
 import ExcelJS from "exceljs";
 import { Card } from "./catalyst/Card/Card";
 import { CountrySelect } from "./catalyst/CountrySelect/CountrySelect";
+import { ThemeToggle } from "./catalyst/ThemeToggle/ThemeToggle";
 import { EntryCard } from "./EntryCard";
 import { detectRegion } from "../lib/locale";
 import { parseTemplateWorkbook } from "../lib/receiptTemplate";
@@ -36,7 +37,10 @@ export function HomePage() {
     <div className="mx-auto flex min-h-svh max-w-4xl flex-col gap-6 px-4 pt-10 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
-        <CountrySelect id="home-region" label="Region" value={homeRegion ?? detectRegion()} onChange={setHomeRegion} />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <CountrySelect id="home-region" label="Region" value={homeRegion ?? detectRegion()} onChange={setHomeRegion} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">

@@ -1,4 +1,5 @@
 import { Button } from "./catalyst/Button/Button";
+import { ThemeToggle } from "./catalyst/ThemeToggle/ThemeToggle";
 import { Tooltip } from "./catalyst/Tooltip/Tooltip";
 import { ItemAssignmentGrid } from "./ItemAssignmentGrid";
 import { PeopleManager } from "./PeopleManager";
@@ -35,9 +36,12 @@ export function SplitBillWizard() {
           <HomeIcon /> Home
         </Button>
         <h1 className="text-2xl font-semibold text-text">Split Bill</h1>
-        <Button variant="destructive" size="sm" onClick={clearAll}>
-          Clear all
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="destructive" size="sm" onClick={clearAll}>
+            Clear all
+          </Button>
+        </div>
       </div>
 
       <StepComponent />
